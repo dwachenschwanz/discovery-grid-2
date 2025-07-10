@@ -704,6 +704,8 @@ function init(basePoints) {
               { name: "Discovery", x: 6, y: 6 },
             ];
 
+            const coordsLabels = [{ name: "Test label", x: 9, y: 7 }];
+
             coords.forEach((q) => {
               const label = chart.renderer
                 .text(q.name, 0, 0) // initial dummy pos
@@ -715,6 +717,23 @@ function init(basePoints) {
                 })
                 .attr({
                   align: "center", // horizontal centering
+                })
+                .add();
+
+              chart.customLabels.push({ x: q.x, y: q.y, label });
+            });
+
+            coordsLabels.forEach((q) => {
+              const label = chart.renderer
+                .text(q.name, 0, 0) // initial dummy pos
+                .css({
+                  color: "#aaa",
+                  fontSize: "10px",
+                  // fontWeight: "bold",
+                  textAlign: "left",
+                })
+                .attr({
+                  align: "left", // horizontal centering
                 })
                 .add();
 
@@ -747,41 +766,10 @@ function init(basePoints) {
               })
               .add();
 
-            chart.renderer
-              .text("Tech Leasing", xPx, yPx8)
-              .css({
-                fontSize: "10px",
-                color: "#333",
-              })
-              .attr({
-                align: "left",
-              })
-              .add();
-
-            chart.renderer
-              .text("Customer Fears", xPx, yPx7)
-              .css({
-                fontSize: "10px",
-                color: "#333",
-              })
-              .attr({
-                align: "left",
-              })
-              .add();
             positionLabels(chart); // Initial positioning
           },
           redraw: function () {
             positionLabels(this); // Reposition on resize
-            this.renderer
-              .text("Tech Leasing", xPx, yPx2)
-              .css({
-                fontSize: "10px",
-                color: "#333",
-              })
-              .attr({
-                align: "left",
-              })
-              .add();
           },
         },
       },
