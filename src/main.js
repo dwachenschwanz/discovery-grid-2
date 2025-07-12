@@ -160,6 +160,32 @@ function init(basePoints) {
     cellGroups[key].names.push(pt.name);
   });
 
+  const quadrantGroups = { Q1: {}, Q2: {}, Q3: {}, Q4: {} };
+
+  basePoints.forEach((pt) => {
+    const { x, y } = pt;
+
+    let quadrant = null;
+    if (x >= 0 && x <= 3 && y >= 0 && y <= 3) {
+      quadrant = "Q1";
+    } else if (x >= 4 && x <= 8 && y >= 0 && y <= 4) {
+      quadrant = "Q2";
+    } else if (x >= 0 && x <= 3 && y >= 5 && y <= 8) {
+      quadrant = "Q3";
+    } else if (x >= 4 && x <= 8 && y >= 4 && y <= 8) {
+      quadrant = "Q4";
+    }
+
+    if (quadrant) {
+      if (!quadrantGroups[quadrant][y]) {
+        quadrantGroups[quadrant][y] = [];
+      }
+      quadrantGroups[quadrant][y].push(pt);
+    }
+  });
+
+  console.log(quadrantGroups);
+
   const jitteredPoints = [];
   const cellSize = 1; // size of each grid cell in axis units
   const padding = 0.1; // margin from edge of cell
@@ -648,6 +674,13 @@ function init(basePoints) {
     //   `Issues: ${group.names.join(", ")}`,
   }));
 
+  console.log("cellTooltips: ", cellTooltips);
+
+  Object.values(cellGroups).forEach((group) => {
+    console.log(group.x, group.y);
+    console.log(group.names);
+  });
+
   Highcharts.chart(
     "container",
     {
@@ -695,6 +728,7 @@ function init(basePoints) {
           },
           load: function () {
             const chart = this;
+
             chart.customLabels = [];
 
             const coords = [
@@ -704,7 +738,18 @@ function init(basePoints) {
               { name: "Discovery", x: 6, y: 6 },
             ];
 
-            const coordsLabels = [{ name: "Test label", x: 9, y: 7 }];
+            const coordsLabels = [{ name: "Test label", x: -2, y: 7 }];
+
+            const chartLeftInPixels = 0;
+
+            // 2. Convert to data value
+            const chartLeftInDataCoords =
+              chart.xAxis[0].toValue(chartLeftInPixels);
+
+            console.log(
+              "Left edge of chart in data coordinates:",
+              chartLeftInDataCoords
+            );
 
             coords.forEach((q) => {
               const label = chart.renderer
@@ -725,20 +770,45 @@ function init(basePoints) {
 
             coordsLabels.forEach((q) => {
               const label = chart.renderer
-                .text(q.name, 0, 0) // initial dummy pos
+                .text(q.name, q.x, q.y)
                 .css({
-                  color: "#aaa",
+                  color: "#000",
                   fontSize: "10px",
-                  // fontWeight: "bold",
-                  textAlign: "left",
                 })
                 .attr({
-                  align: "left", // horizontal centering
+                  align: "left",
                 })
                 .add();
 
+              // chart.customLabels.push({ x: q.x, y: q.y, label });
+            });
+            /*
+            coordsLabels.forEach((q) => {
+              const label = chart.renderer
+                .text(q.name, 0, 0) // initial dummy pos
+                .css({
+                  color: "#000",
+                  fontSize: "10px",
+                  // fontWeight: "bold",
+                  textAlign: "right",
+                })
+                .attr({
+                  align: "right", // horizontal centering
+                })
+                .add();
+
+              const x = chart.plotLeft + q.x;
+              const y = chart.plotTop + q.y;
+
+              label.attr({
+                x: x,
+                y: y,
+              });
+
+              // chart.customLabels.push({ x: 0, y: q.y, label });
               chart.customLabels.push({ x: q.x, y: q.y, label });
             });
+            */
 
             // ✅ Add text to the right of y=8 (top row)
             const ySpacing =

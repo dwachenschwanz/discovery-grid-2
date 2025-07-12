@@ -81,3 +81,11 @@ body {
   /* border-radius: 8px; */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+
+.overlay-label {
+  position: absolute;
+  font-size: 12px;
+  font-weight: bold;
+  color: #000;
+  pointer-events: none;
+}
