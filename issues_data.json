@@ -1,0 +1,104 @@
+[
+  {
+    "Issue Name": "Old Buildings",
+    "Ignorance": 9,
+    "Impact": 9,
+    "Readiness": 81
+  },
+  {
+    "Issue Name": "Sole Provider",
+    "Ignorance": 6,
+    "Impact": 9,
+    "Readiness": 54
+  },
+  {
+    "Issue Name": "Environmental",
+    "Ignorance": 6,
+    "Impact": 9,
+    "Readiness": 54
+  },
+  {
+    "Issue Name": "Partnerships",
+    "Ignorance": 6,
+    "Impact": 7,
+    "Readiness": 54
+  },
+  {
+    "Issue Name": "Regulatory Cost",
+    "Ignorance": 8,
+    "Impact": 3,
+    "Readiness": 24
+  },
+  {
+    "Issue Name": "Populated Areas",
+    "Ignorance": 5,
+    "Impact": 4,
+    "Readiness": 20
+  },
+  {
+    "Issue Name": "Dense Population",
+    "Ignorance": 5,
+    "Impact": 1,
+    "Readiness": 20
+  },
+  {
+    "Issue Name": "Tech Synergy",
+    "Ignorance": 4,
+    "Impact": 5,
+    "Readiness": 20
+  },
+  {
+    "Issue Name": "Customer Fear",
+    "Ignorance": 2,
+    "Impact": 8,
+    "Readiness": 16
+  },
+  {
+    "Issue Name": "Tech Leasing",
+    "Ignorance": 2,
+    "Impact": 8,
+    "Readiness": 16
+  },
+  {
+    "Issue Name": "Nuclear Modules",
+    "Ignorance": 1,
+    "Impact": 4,
+    "Readiness": 4
+  },
+  {
+    "Issue Name": "New Funding",
+    "Ignorance": 3,
+    "Impact": 1,
+    "Readiness": 3
+  },
+  {
+    "Issue Name": "Land Use",
+    "Ignorance": 7,
+    "Impact": 0,
+    "Readiness": 0
+  },
+  {
+    "Issue Name": "Issue Title",
+    "Ignorance": 0,
+    "Impact": 0,
+    "Readiness": 0
+  },
+  {
+    "Issue Name": "New issue",
+    "Ignorance": 6,
+    "Impact": 5,
+    "Readiness": 0
+  },
+  {
+    "Issue Name": "A Test Issue",
+    "Ignorance": 6,
+    "Impact": 5,
+    "Readiness": 0
+  },
+  {
+    "Issue Name": "AAD",
+    "Ignorance": 0,
+    "Impact": 0,
+    "Readiness": 0
+  }
+]
