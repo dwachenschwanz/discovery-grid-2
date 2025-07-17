@@ -916,6 +916,7 @@ function init(basePoints) {
                 lineColor: "#ff0000", // Highlight color
                 lineWidth: 3, // Make border thicker on hover
                 fillColor: "rgba(255, 0, 0, 0.2)", // Optional: add slight fill on hover
+                halo: false,
               },
             },
           },
@@ -1081,11 +1082,13 @@ function positionLabels(chart) {
                 pt.setState("hover"); // Highlight rectangle
               }
             });
+            document.querySelector(".stickyNote").classList.add("show");
           });
 
           label.element.addEventListener("mouseleave", () => {
             label.css({ color: "#000", fontWeight: "normal" }); // Revert on mouseout
             rectSeries.points.forEach((pt) => pt.setState("")); // Clear all highlights
+            document.querySelector(".stickyNote").classList.remove("show");
           });
 
           label.element.addEventListener("click", () => {
