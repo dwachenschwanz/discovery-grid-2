@@ -688,10 +688,8 @@ function init(basePoints) {
         type: "scatter",
         marginRight: 120,
         marginLeft: 120,
-        marginTop: 100,
+        marginTop: 60,
         zoomType: null,
-        // width: 800,
-        // height: 800,
 
         events: {
           render: function () {
@@ -767,34 +765,6 @@ function init(basePoints) {
               chart.customLabels.push({ x: q.x, y: q.y, label });
             });
 
-            /*
-            coordsLabels.forEach((q) => {
-              const label = chart.renderer
-                .text(q.name, 0, 0) // initial dummy pos
-                .css({
-                  color: "#000",
-                  fontSize: "10px",
-                  // fontWeight: "bold",
-                  textAlign: "right",
-                })
-                .attr({
-                  align: "right", // horizontal centering
-                })
-                .add();
-
-              const x = chart.plotLeft + q.x;
-              const y = chart.plotTop + q.y;
-
-              label.attr({
-                x: x,
-                y: y,
-              });
-
-              // chart.customLabels.push({ x: 0, y: q.y, label });
-              chart.customLabels.push({ x: q.x, y: q.y, label });
-            });
-            */
-
             // ✅ Add text to the right of y=8 (top row)
             const ySpacing =
               chart.yAxis[0].toPixels(8) - chart.yAxis[0].toPixels(7);
@@ -816,7 +786,7 @@ function init(basePoints) {
               Object.entries(rows).forEach(([y, points]) => {
                 points.forEach((pt, idx) => {
                   const label = chart.renderer
-                    .text(pt.name, 0, 0)
+                    .text(`${pt.x + 1}-${pt.name}`, 0, 0)
                     .css({
                       fontSize: "10px",
                       color: "#000",
@@ -837,56 +807,6 @@ function init(basePoints) {
                 });
               });
             });
-
-            // const lineHeight = 12; // pixels between lines
-
-            // Object.values(cellGroups).forEach((group) => {
-            //   group.names.forEach((name, idx) => {
-            //     const label = chart.renderer
-            //       .text(name, 0, 0)
-            //       .css({
-            //         fontSize: "10px",
-            //         color: "#000",
-            //       })
-            //       .attr({
-            //         align: "center",
-            //         zIndex: 5,
-            //       })
-            //       .add();
-
-            //     chart.customLabels.push({
-            //       x: group.x,
-            //       y: group.y,
-            //       label: label,
-            //       isCellLabel: true,
-            //       lineOffset: idx * lineHeight, // For positioning later
-            //     });
-            //   });
-            // });
-
-            // Add labels with names for each cell group
-            // Object.values(cellGroups).forEach((group) => {
-            //   console.log("group:  ", group);
-            //   const namesList = group.names.join("|");
-            //   const label = chart.renderer
-            //     .text(namesList, 0, 0)
-            //     .css({
-            //       fontSize: "10px",
-            //       color: "#000",
-            //     })
-            //     .attr({
-            //       align: "center",
-            //       zIndex: 5,
-            //     })
-            //     .add();
-
-            //   chart.customLabels.push({
-            //     x: group.x,
-            //     y: group.y,
-            //     label: label,
-            //     isCellLabel: true, // Mark for later positioning
-            //   });
-            // });
           },
           redraw: function () {
             positionLabels(this); // Reposition on resize
@@ -992,7 +912,10 @@ function init(basePoints) {
             lineWidth: 0,
             states: {
               hover: {
-                enabled: false,
+                enabled: true,
+                lineColor: "#ff0000", // Highlight color
+                lineWidth: 3, // Make border thicker on hover
+                fillColor: "rgba(255, 0, 0, 0.2)", // Optional: add slight fill on hover
               },
             },
           },
@@ -1094,104 +1017,6 @@ function init(basePoints) {
     }
   );
 }
-// function positionLabels(chart) {
-//   chart.customLabels.forEach(({ x, y, label }) => {
-//     const px = chart.xAxis[0].toPixels(x);
-//     const py = chart.yAxis[0].toPixels(y);
-
-//     label.attr({
-//       x: px,
-//       y: py,
-//       align: "center",
-//     });
-//   });
-// }
-
-// function positionLabels(chart) {
-//   chart.customLabels.forEach(({ x, y, label, isCellLabel }) => {
-//     // if (isCellLabel) x = x + 0.5;
-//     if (isCellLabel) {
-//       if (x < 4) x = -2.42857;
-//       else x = 8.6;
-//     }
-//     const px = chart.xAxis[0].toPixels(x);
-//     const py = chart.yAxis[0].toPixels(y);
-
-//     label.attr({
-//       // x: px + (isCellLabel ? 33 : 0),
-//       x: px,
-//       y: py, // Offset cell labels slightly below point
-//       // y: py + (isCellLabel ? 8 : 0), // Offset cell labels slightly below point
-//       align: isCellLabel ? "left" : "center",
-//     });
-//   });
-// }
-
-// function positionLabels(chart) {
-//   chart.customLabels.forEach(({ x, y, label, isCellLabel, lineOffset }) => {
-//     console.log("x: ", x, "y: ", y, "lineOffset: ", lineOffset);
-//     let plotX = x;
-//     if (isCellLabel) {
-//       plotX = x < 4 ? 0 : 8.6; // Your logic for left/right placement
-//       // plotX = x < 4 ? -2.42857 : 8.6; // Your logic for left/right placement
-//     }
-
-//     const px = chart.xAxis[0].toPixels(plotX);
-//     const py = chart.yAxis[0].toPixels(y);
-
-//     const fontSize = parseFloat(getComputedStyle(label.element).fontSize) || 10; // fallback if style not yet applied
-
-//     const fontOffset = fontSize / 2;
-
-//     label.attr({
-//       x: px,
-//       y: py + (isCellLabel ? lineOffset : 0) + fontOffset, // Stack each label downwards
-//       align: isCellLabel ? "left" : "center",
-//     });
-//   });
-// }
-
-// function positionLabels(chart) {
-//   // Group labels by (x, y) pairs so we can calculate vertical centering per group
-//   const labelsByCell = {};
-
-//   chart.customLabels.forEach(({ x, y, label, isCellLabel, lineOffset }) => {
-//     const key = `${x}-${y}`;
-//     if (!labelsByCell[key]) {
-//       labelsByCell[key] = [];
-//     }
-//     labelsByCell[key].push({ x, y, label, isCellLabel, lineOffset });
-//   });
-
-//   Object.values(labelsByCell).forEach((labelGroup) => {
-//     // Assume all have same y, x and font size
-//     const sample = labelGroup[0];
-//     let plotX = sample.x;
-//     if (sample.isCellLabel) {
-//       plotX = sample.x < 4 ? -2.4 : 8.6;
-//     }
-
-//     const px = chart.xAxis[0].toPixels(plotX);
-//     const py = chart.yAxis[0].toPixels(sample.y);
-
-//     // Get font size dynamically (assuming all labels in group share it)
-//     const fontSize =
-//       parseFloat(getComputedStyle(sample.label.element).fontSize) || 10;
-//     const fontOffset = fontSize / 2;
-//     const lineHeight = 12; // Should match your label line height
-
-//     const totalHeight = labelGroup.length * lineHeight;
-//     const startY = py - totalHeight / 2 + fontOffset; // Centered start position
-
-//     labelGroup.forEach(({ label, isCellLabel }, idx) => {
-//       label.attr({
-//         x: px,
-//         y: startY + idx * lineHeight,
-//         align: isCellLabel ? "left" : "center",
-//       });
-//     });
-//   });
-// }
 
 function positionLabels(chart) {
   const labelsByRow = {};
@@ -1212,7 +1037,7 @@ function positionLabels(chart) {
     labelsInRow
       .slice() // shallow copy to avoid mutating original
       .reverse()
-      .forEach(({ x, label, isCellLabel }, idx) => {
+      .forEach(({ x, y, label, isCellLabel }, idx) => {
         const plotX = isCellLabel
           ? x < 4
             ? chart.xAxis[0].toValue(0)
@@ -1229,6 +1054,46 @@ function positionLabels(chart) {
           y: py,
           align: isCellLabel ? "left" : "center",
         });
+
+        const rectSeries = chart.series[1]; // Your "Cells" series
+
+        if (isCellLabel && !label.clickBound) {
+          // Base style for clickable look
+          label.css({
+            color: "#007bff", // Bootstrap link blue
+            color: "#000",
+            textDecoration: "underline",
+            fontWeight: "normal",
+          });
+          label.element.style.cursor = "pointer";
+
+          label.element.setAttribute("title", "Click to highlight or filter");
+
+          // Hover effects
+          label.element.addEventListener("mouseenter", () => {
+            console.log(`Hovering over label: ${label.textStr}`);
+            console.log(x, y);
+            label.css({ color: "#ff0000", fontWeight: "bold" }); // Red on hover
+            rectSeries.points.forEach((pt) => {
+              console.log(pt.x, pt.y);
+              if (pt.x === x && pt.y === y) {
+                console.log("found: ", pt.x, pt.y);
+                pt.setState("hover"); // Highlight rectangle
+              }
+            });
+          });
+
+          label.element.addEventListener("mouseleave", () => {
+            label.css({ color: "#000", fontWeight: "normal" }); // Revert on mouseout
+            rectSeries.points.forEach((pt) => pt.setState("")); // Clear all highlights
+          });
+
+          label.element.addEventListener("click", () => {
+            console.log(`Label clicked: ${label.textStr}`);
+            alert(`You clicked on label: ${label.textStr}`);
+          });
+          label.clickBound = true;
+        }
       });
   });
 }
