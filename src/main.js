@@ -170,7 +170,7 @@ function init(basePoints) {
       quadrant = "Q1";
     } else if (x >= 4 && x <= 8 && y >= 0 && y <= 4) {
       quadrant = "Q2";
-    } else if (x >= 0 && x <= 3 && y >= 5 && y <= 8) {
+    } else if (x >= 0 && x <= 3 && y >= 4 && y <= 8) {
       quadrant = "Q3";
     } else if (x >= 4 && x <= 8 && y >= 4 && y <= 8) {
       quadrant = "Q4";
@@ -688,6 +688,7 @@ function init(basePoints) {
         type: "scatter",
         marginRight: 120,
         marginLeft: 120,
+        marginTop: 100,
         zoomType: null,
         // width: 800,
         // height: 800,
@@ -738,8 +739,6 @@ function init(basePoints) {
               { name: "Discovery", x: 6, y: 6 },
             ];
 
-            const coordsLabels = [{ name: "Test label", x: -2, y: 7 }];
-
             const chartLeftInPixels = 0;
 
             // 2. Convert to data value
@@ -768,20 +767,6 @@ function init(basePoints) {
               chart.customLabels.push({ x: q.x, y: q.y, label });
             });
 
-            coordsLabels.forEach((q) => {
-              const label = chart.renderer
-                .text(q.name, q.x, q.y)
-                .css({
-                  color: "#000",
-                  fontSize: "10px",
-                })
-                .attr({
-                  align: "left",
-                })
-                .add();
-
-              // chart.customLabels.push({ x: q.x, y: q.y, label });
-            });
             /*
             coordsLabels.forEach((q) => {
               const label = chart.renderer
@@ -825,18 +810,83 @@ function init(basePoints) {
             const yPx2 = chart.yAxis[0].toPixels(1);
             console.log("yPx2: ", yPx2);
 
-            chart.renderer
-              .text("Old Buildings", xPx, yPx9)
-              .css({
-                fontSize: "10px",
-                color: "#333",
-              })
-              .attr({
-                align: "left",
-              })
-              .add();
+            const lineHeight = 12; // vertical space between labels
 
-            positionLabels(chart); // Initial positioning
+            Object.entries(quadrantGroups).forEach(([quadrantName, rows]) => {
+              Object.entries(rows).forEach(([y, points]) => {
+                points.forEach((pt, idx) => {
+                  const label = chart.renderer
+                    .text(pt.name, 0, 0)
+                    .css({
+                      fontSize: "10px",
+                      color: "#000",
+                    })
+                    .attr({
+                      align: "left",
+                      zIndex: 5,
+                    })
+                    .add();
+
+                  chart.customLabels.push({
+                    x: pt.x,
+                    y: Number(y), // Ensure it's numeric
+                    label: label,
+                    isCellLabel: true,
+                    lineOffset: idx * lineHeight,
+                  });
+                });
+              });
+            });
+
+            // const lineHeight = 12; // pixels between lines
+
+            // Object.values(cellGroups).forEach((group) => {
+            //   group.names.forEach((name, idx) => {
+            //     const label = chart.renderer
+            //       .text(name, 0, 0)
+            //       .css({
+            //         fontSize: "10px",
+            //         color: "#000",
+            //       })
+            //       .attr({
+            //         align: "center",
+            //         zIndex: 5,
+            //       })
+            //       .add();
+
+            //     chart.customLabels.push({
+            //       x: group.x,
+            //       y: group.y,
+            //       label: label,
+            //       isCellLabel: true,
+            //       lineOffset: idx * lineHeight, // For positioning later
+            //     });
+            //   });
+            // });
+
+            // Add labels with names for each cell group
+            // Object.values(cellGroups).forEach((group) => {
+            //   console.log("group:  ", group);
+            //   const namesList = group.names.join("|");
+            //   const label = chart.renderer
+            //     .text(namesList, 0, 0)
+            //     .css({
+            //       fontSize: "10px",
+            //       color: "#000",
+            //     })
+            //     .attr({
+            //       align: "center",
+            //       zIndex: 5,
+            //     })
+            //     .add();
+
+            //   chart.customLabels.push({
+            //     x: group.x,
+            //     y: group.y,
+            //     label: label,
+            //     isCellLabel: true, // Mark for later positioning
+            //   });
+            // });
           },
           redraw: function () {
             positionLabels(this); // Reposition on resize
@@ -847,6 +897,7 @@ function init(basePoints) {
         enabled: false,
       },
       title: {
+        // text: null,
         text: "Discovery Grid",
       },
       xAxis: {
@@ -871,6 +922,10 @@ function init(basePoints) {
       yAxis: {
         title: {
           text: "Ignorance",
+          align: "high", // Align at top
+          rotation: 0, // Horizontal text
+          x: 50, // Adjust left/right as needed
+          y: -5, // Move upwards if needed (tweak to fit)
           style: {
             fontSize: "18px", // ← Increase this as needed
             fontWeight: "bold",
@@ -1039,15 +1094,141 @@ function init(basePoints) {
     }
   );
 }
-function positionLabels(chart) {
-  chart.customLabels.forEach(({ x, y, label }) => {
-    const px = chart.xAxis[0].toPixels(x);
-    const py = chart.yAxis[0].toPixels(y);
+// function positionLabels(chart) {
+//   chart.customLabels.forEach(({ x, y, label }) => {
+//     const px = chart.xAxis[0].toPixels(x);
+//     const py = chart.yAxis[0].toPixels(y);
 
-    label.attr({
-      x: px,
-      y: py,
-      align: "center",
-    });
+//     label.attr({
+//       x: px,
+//       y: py,
+//       align: "center",
+//     });
+//   });
+// }
+
+// function positionLabels(chart) {
+//   chart.customLabels.forEach(({ x, y, label, isCellLabel }) => {
+//     // if (isCellLabel) x = x + 0.5;
+//     if (isCellLabel) {
+//       if (x < 4) x = -2.42857;
+//       else x = 8.6;
+//     }
+//     const px = chart.xAxis[0].toPixels(x);
+//     const py = chart.yAxis[0].toPixels(y);
+
+//     label.attr({
+//       // x: px + (isCellLabel ? 33 : 0),
+//       x: px,
+//       y: py, // Offset cell labels slightly below point
+//       // y: py + (isCellLabel ? 8 : 0), // Offset cell labels slightly below point
+//       align: isCellLabel ? "left" : "center",
+//     });
+//   });
+// }
+
+// function positionLabels(chart) {
+//   chart.customLabels.forEach(({ x, y, label, isCellLabel, lineOffset }) => {
+//     console.log("x: ", x, "y: ", y, "lineOffset: ", lineOffset);
+//     let plotX = x;
+//     if (isCellLabel) {
+//       plotX = x < 4 ? 0 : 8.6; // Your logic for left/right placement
+//       // plotX = x < 4 ? -2.42857 : 8.6; // Your logic for left/right placement
+//     }
+
+//     const px = chart.xAxis[0].toPixels(plotX);
+//     const py = chart.yAxis[0].toPixels(y);
+
+//     const fontSize = parseFloat(getComputedStyle(label.element).fontSize) || 10; // fallback if style not yet applied
+
+//     const fontOffset = fontSize / 2;
+
+//     label.attr({
+//       x: px,
+//       y: py + (isCellLabel ? lineOffset : 0) + fontOffset, // Stack each label downwards
+//       align: isCellLabel ? "left" : "center",
+//     });
+//   });
+// }
+
+// function positionLabels(chart) {
+//   // Group labels by (x, y) pairs so we can calculate vertical centering per group
+//   const labelsByCell = {};
+
+//   chart.customLabels.forEach(({ x, y, label, isCellLabel, lineOffset }) => {
+//     const key = `${x}-${y}`;
+//     if (!labelsByCell[key]) {
+//       labelsByCell[key] = [];
+//     }
+//     labelsByCell[key].push({ x, y, label, isCellLabel, lineOffset });
+//   });
+
+//   Object.values(labelsByCell).forEach((labelGroup) => {
+//     // Assume all have same y, x and font size
+//     const sample = labelGroup[0];
+//     let plotX = sample.x;
+//     if (sample.isCellLabel) {
+//       plotX = sample.x < 4 ? -2.4 : 8.6;
+//     }
+
+//     const px = chart.xAxis[0].toPixels(plotX);
+//     const py = chart.yAxis[0].toPixels(sample.y);
+
+//     // Get font size dynamically (assuming all labels in group share it)
+//     const fontSize =
+//       parseFloat(getComputedStyle(sample.label.element).fontSize) || 10;
+//     const fontOffset = fontSize / 2;
+//     const lineHeight = 12; // Should match your label line height
+
+//     const totalHeight = labelGroup.length * lineHeight;
+//     const startY = py - totalHeight / 2 + fontOffset; // Centered start position
+
+//     labelGroup.forEach(({ label, isCellLabel }, idx) => {
+//       label.attr({
+//         x: px,
+//         y: startY + idx * lineHeight,
+//         align: isCellLabel ? "left" : "center",
+//       });
+//     });
+//   });
+// }
+
+function positionLabels(chart) {
+  const labelsByRow = {};
+
+  chart.customLabels.forEach(({ x, y, label, isCellLabel }) => {
+    const key = y;
+    if (!labelsByRow[key]) {
+      labelsByRow[key] = [];
+    }
+    labelsByRow[key].push({ x, y, label, isCellLabel });
+  });
+
+  Object.values(labelsByRow).forEach((labelsInRow) => {
+    const numLabels = labelsInRow.length;
+    const baseY = labelsInRow[0].y;
+
+    // Reverse the labels array for bottom-up ordering
+    labelsInRow
+      .slice() // shallow copy to avoid mutating original
+      .reverse()
+      .forEach(({ x, label, isCellLabel }, idx) => {
+        const plotX = isCellLabel
+          ? x < 4
+            ? chart.xAxis[0].toValue(0)
+            : 8.6
+          : x;
+
+        const relativeY = baseY - 0.5 + ((idx + 0.5) * 1) / numLabels;
+
+        const px = chart.xAxis[0].toPixels(plotX);
+        const py = chart.yAxis[0].toPixels(relativeY);
+
+        label.attr({
+          x: px,
+          y: py,
+          align: isCellLabel ? "left" : "center",
+        });
+      });
   });
 }

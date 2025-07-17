@@ -12,6 +12,18 @@
     "Readiness": 54
   },
   {
+    "Issue Name": "Environmental",
+    "Ignorance": 6,
+    "Impact": 9,
+    "Readiness": 54
+  },
+  {
+    "Issue Name": "Partnerships",
+    "Ignorance": 6,
+    "Impact": 7,
+    "Readiness": 54
+  },
+  {
     "Issue Name": "Regulatory Cost",
     "Ignorance": 8,
     "Impact": 3,
@@ -21,6 +33,12 @@
     "Issue Name": "Populated Areas",
     "Ignorance": 5,
     "Impact": 4,
+    "Readiness": 20
+  },
+  {
+    "Issue Name": "Dense Population",
+    "Ignorance": 5,
+    "Impact": 1,
     "Readiness": 20
   },
   {
@@ -67,14 +85,14 @@
   },
   {
     "Issue Name": "New issue",
-    "Ignorance": 0,
-    "Impact": 0,
+    "Ignorance": 6,
+    "Impact": 5,
     "Readiness": 0
   },
   {
     "Issue Name": "A Test Issue",
-    "Ignorance": 0,
-    "Impact": 0,
+    "Ignorance": 6,
+    "Impact": 5,
     "Readiness": 0
   },
   {
