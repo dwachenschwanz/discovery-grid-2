@@ -896,7 +896,11 @@ function init(basePoints) {
           name: "Points",
           data: jitteredPoints,
           showInLegend: false,
-          enableMouseTracking: false,
+          states: {
+            hover: {
+              enabled: false,
+            },
+          },
           dataLabels: {
             enabled: false,
           },
@@ -905,7 +909,9 @@ function init(basePoints) {
           name: "Cells",
           type: "scatter",
           data: cellTooltips,
+          enableMouseTracking: true,
           marker: {
+            enabled: false,
             symbol: "square",
             radius: 30,
             fillColor: "transparent",
@@ -916,12 +922,23 @@ function init(basePoints) {
                 lineColor: "#ff0000", // Highlight color
                 lineWidth: 3, // Make border thicker on hover
                 fillColor: "rgba(255, 0, 0, 0.2)", // Optional: add slight fill on hover
-                halo: false,
+                // fillColor: "transparent",
+                // halo: false,
               },
             },
           },
           dataLabels: {
             enabled: false,
+          },
+          states: {
+            hover: {
+              halo: {
+                size: 0,
+              },
+              marker: {
+                enabled: false,
+              },
+            },
           },
           enableMouseTracking: true,
           showInLegend: false,
