@@ -823,6 +823,9 @@ function init(basePoints) {
       xAxis: {
         title: {
           text: "Impact",
+          // align: "high", // Optional — 'middle' by default; use 'high' if aligning near end
+          // x: 50, // ← increase to shift rightward
+          y: -30, // vertical offset downward
           style: {
             fontSize: "18px", // ← Increase this as needed
             fontWeight: "bold",
@@ -831,6 +834,10 @@ function init(basePoints) {
         labels: {
           style: {
             fontSize: "18px", // ← increase tick label size
+          },
+          y: 20,
+          formatter: function () {
+            return this.value === "5" ? "" : this.value;
           },
         },
         categories: categories,
@@ -842,10 +849,13 @@ function init(basePoints) {
       yAxis: {
         title: {
           text: "Ignorance",
-          align: "high", // Align at top
-          rotation: 0, // Horizontal text
-          x: 50, // Adjust left/right as needed
-          y: -5, // Move upwards if needed (tweak to fit)
+          // align: "high", // Align at top
+          // rotation: 0, // Horizontal text
+          align: "middle",
+          rotation: 270,
+          // x: 50, // Adjust left/right as needed
+          // y: -5, // Move upwards if needed (tweak to fit)
+          x: 20,
           style: {
             fontSize: "18px", // ← Increase this as needed
             fontWeight: "bold",
@@ -854,6 +864,10 @@ function init(basePoints) {
         labels: {
           style: {
             fontSize: "18px", // ← increase tick label size
+          },
+          x: -10,
+          formatter: function () {
+            return this.value === "5" ? "" : this.value;
           },
         },
         categories: categories,
@@ -1099,7 +1113,27 @@ function positionLabels(chart) {
                 pt.setState("hover"); // Highlight rectangle
               }
             });
-            document.querySelector(".stickyNote").classList.add("show");
+            const labelRect = label.element.getBoundingClientRect();
+            const parentRect =
+              label.element.parentElement.getBoundingClientRect();
+
+            const verticalOffset = labelRect.top - parentRect.top;
+            const horizontalOffset = labelRect.left - parentRect.left;
+
+            console.log("Vertical offset:", verticalOffset);
+            console.log("Horizontal offset:", horizontalOffset);
+
+            // document.querySelector(".stickyNote").classList.add("show");
+            const stickyNote = document.querySelector(".stickyNote");
+            if (x > 3) {
+              stickyNote.style.left = "100%";
+              stickyNote.style.transform = "translateX(10px)";
+            } else {
+              stickyNote.style.left = "-10px";
+              stickyNote.style.transform = "translateX(-100%)";
+            }
+            stickyNote.style.top = `${verticalOffset}px`;
+            stickyNote.classList.add("show");
           });
 
           label.element.addEventListener("mouseleave", () => {

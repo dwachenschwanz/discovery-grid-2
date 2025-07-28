@@ -68,9 +68,13 @@ body {
 .stickyNote {
   visibility: hidden;
   position: absolute;
-  top: 50%;
-  left: 100%; /* Align to the right edge of .square-container */
-  transform: translateY(-50%) translateX(10px); /* Center vertically, move right by 10px */
+  /* left: 100%; Align to the right edge of .square-container */
+  /* top: 30%;
+  right: -10px; */
+  transform: translatex(-100%); */
+  /*transform:translateY(-50%)translateX(10px)Centervertically,moverightby10px*/
+  left: 100%;
+  transform: translateY(-50%) translateX(10px);
   width: 150px;
   height: 150px;
   padding: 12px;
