@@ -1,6 +1,6 @@
 import Highcharts from "highcharts";
 import HighchartsMore from "highcharts/highcharts-more";
-import { DataClient, dataClient } from "./utils/data_client.js"; // Use the relative path to your file
+import { dataClient } from "./utils/data_client.js"; // Use the relative path to your file
 
 import "./style.css";
 // import javascriptLogo from './javascript.svg'
@@ -758,9 +758,10 @@ function init(basePoints) {
         shared: false,
         useHTML: true,
         formatter: function () {
-          return this.point.name;
+            if (this.series.name !== "Cells") return false;
+            return this.point.name;
         },
-      },
+     },
 
       plotOptions: {
         series: {
@@ -785,18 +786,19 @@ function init(basePoints) {
       },
       series: [
         {
-          name: "Points",
-          data: jitteredPoints,
-          showInLegend: false,
-          states: {
-            hover: {
-              enabled: false,
+            name: "Points",
+            data: jitteredPoints,
+            showInLegend: false,
+            enableMouseTracking: false,
+            states: {
+                hover: {
+                enabled: false,
+                },
             },
-          },
-          dataLabels: {
-            enabled: false,
-          },
-        },
+            dataLabels: {
+                enabled: false,
+            },
+            },
         {
           name: "Cells",
           type: "scatter",
@@ -970,7 +972,7 @@ function positionLabels(chart) {
         if (isCellLabel && !label.clickBound) {
           // Base style for clickable look
           label.css({
-            color: "#007bff", // Bootstrap link blue
+            // color: "#007bff", // Bootstrap link blue
             color: "#000",
             textDecoration: "underline",
             fontWeight: "normal",
