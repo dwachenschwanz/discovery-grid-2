@@ -327,17 +327,6 @@ function placePoint(group, name, col, row, cols, rows) {
   };
 }
 
-// function buildCellTooltips(cellGroups) {
-//   return Object.values(cellGroups).map((group) => ({
-//     x: group.x,
-//     y: group.y,
-//     name:
-//       `<div style="text-align: left; font-weight: bold; margin-top: 6px;">Issues:</div>` +
-//       `<ul style="padding-left: 10px; margin: 4px 0;">` +
-//       group.names.map((name) => `<li>${escapeHtml(name)}</li>`).join("") +
-//       `</ul>`,
-//   }));
-// }
 
 function buildCellTooltips(cellGroups) {
   return Object.values(cellGroups).map((group) => {
@@ -623,18 +612,29 @@ function addIssueLabels(chart, quadrantGroups) {
           })
           .add();
 
-        chart.customLabels.push({
+        const labelMeta = {
           x: pt.x,
           y: Number(y),
           label,
           isCellLabel: true,
           lineOffset: idx * 12,
           issueName: pt.name,
-        });
+        };
+
+        chart.customLabels.push(labelMeta);
+
+        bindIssueLabelEvents(
+          chart,
+          label,
+          labelMeta.x,
+          labelMeta.y,
+          labelMeta.issueName
+        );
       });
     });
   });
 }
+
 
 function positionLabels(chart) {
   const labelsByRow = {};
@@ -673,10 +673,6 @@ function positionLabels(chart) {
           y: py,
           align: isCellLabel ? "left" : "center",
         });
-
-        if (isCellLabel) {
-          bindIssueLabelEvents(chart, label, x, baseY, issueName);
-        }
       });
   });
 }
