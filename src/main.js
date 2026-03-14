@@ -301,8 +301,8 @@ function buildJitteredPoints(cellGroups) {
             pos.col,
             pos.row,
             layout.cols,
-            layout.rows
-          )
+            layout.rows,
+          ),
         );
       });
       return;
@@ -322,8 +322,8 @@ function buildJitteredPoints(cellGroups) {
           i % cols,
           Math.floor(i / cols),
           cols,
-          rows
-        )
+          rows,
+        ),
       );
     }
   });
@@ -366,7 +366,7 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
     chart: {
       type: "scatter",
       marginRight: 120,
-      marginLeft: 120,
+      marginLeft: 180,
       marginTop: 60,
       zoomType: null,
       events: {
@@ -416,7 +416,7 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
       max: 8,
       gridLineWidth: 1,
       gridLineColor: "#888",
-      lineWidth: 0
+      lineWidth: 0,
     },
     yAxis: {
       title: {
@@ -625,8 +625,12 @@ function addIssueLabels(chart, quadrantGroups) {
               fontSize: "10px",
               color: "#000",
             })
+            // .attr({
+            //   align: "left",
+            //   zIndex: 5,
+            // })
             .attr({
-              align: "left",
+              align: pt.x < 4 ? "right" : "left",
               zIndex: 5,
             })
             .add();
@@ -641,7 +645,14 @@ function addIssueLabels(chart, quadrantGroups) {
           };
 
           chart.customLabels.push(meta);
-          bindIssueLabelEvents(chart, label, meta.x, meta.y, meta.issueName, meta.description);
+          bindIssueLabelEvents(
+            chart,
+            label,
+            meta.x,
+            meta.y,
+            meta.issueName,
+            meta.description,
+          );
         });
       });
   });
@@ -661,8 +672,33 @@ function buildLabelsByRow(labels) {
   return labelsByRow;
 }
 
+// function positionLabels(chart) {
+//   const labelsByRow = chart.labelsByRow ?? {};
+
+//   Object.values(labelsByRow).forEach((labelsInRow) => {
+//     const numLabels = labelsInRow.length;
+//     const baseY = labelsInRow[0].y;
+
+//     labelsInRow
+//       .slice()
+//       .reverse()
+//       .forEach(({ x, label, isCellLabel }, idx) => {
+//         const plotX = getLabelPlotX(chart, x, isCellLabel);
+//         const relativeY = baseY - 0.5 + ((idx + 0.5) * 1) / numLabels;
+
+//         label.attr({
+//           x: chart.xAxis[0].toPixels(plotX),
+//           y: chart.yAxis[0].toPixels(relativeY),
+//           align: isCellLabel ? "left" : "center",
+//         });
+//       });
+//   });
+// }
+
 function positionLabels(chart) {
   const labelsByRow = chart.labelsByRow ?? {};
+  const LEFT_LABEL_PAD = 30;
+  const RIGHT_LABEL_PAD = 8;
 
   Object.values(labelsByRow).forEach((labelsInRow) => {
     const numLabels = labelsInRow.length;
@@ -672,13 +708,27 @@ function positionLabels(chart) {
       .slice()
       .reverse()
       .forEach(({ x, label, isCellLabel }, idx) => {
-        const plotX = getLabelPlotX(chart, x, isCellLabel);
         const relativeY = baseY - 0.5 + ((idx + 0.5) * 1) / numLabels;
+        const pixelY = chart.yAxis[0].toPixels(relativeY);
+
+        if (!isCellLabel) {
+          label.attr({
+            x: chart.xAxis[0].toPixels(x),
+            y: pixelY,
+            align: "center",
+          });
+          return;
+        }
+
+        const isLeftSide = x < 4;
+        const pixelX = isLeftSide
+          ? chart.plotLeft - LEFT_LABEL_PAD
+          : chart.plotLeft + chart.plotWidth + RIGHT_LABEL_PAD;
 
         label.attr({
-          x: chart.xAxis[0].toPixels(plotX),
-          y: chart.yAxis[0].toPixels(relativeY),
-          align: isCellLabel ? "left" : "center",
+          x: pixelX,
+          y: pixelY,
+          align: isLeftSide ? "right" : "left",
         });
       });
   });

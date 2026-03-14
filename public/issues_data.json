@@ -7,6 +7,13 @@
     "Description": "Many buildings are old and not designed to be energy efficient, making it difficult to implement new technologies and reduce energy consumption."
   },
   {
+    "Issue Name": "Competition",
+    "Ignorance": 6,
+    "Impact": 6,
+    "Readiness": 36,
+    "Description": "Lots of competition in the energy market, which can make it difficult for new technologies to gain traction and for companies to differentiate themselves."
+  },
+  {
     "Issue Name": "Sole Provider",
     "Ignorance": 6,
     "Impact": 9,
@@ -63,10 +70,11 @@
     "Readiness": 16
   },
   {
-    "Issue Name": "Nuclear Modules",
+    "Issue Name": "Nuclear Modules with extra long title",
     "Ignorance": 1,
     "Impact": 4,
-    "Readiness": 4
+    "Readiness": 4,
+    "Description": "Nuclear modules are a promising technology for generating clean energy, but they can be expensive and difficult to implement, especially in areas with limited infrastructure."
   },
   {
     "Issue Name": "New Funding",
