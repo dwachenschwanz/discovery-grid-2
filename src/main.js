@@ -4,7 +4,7 @@ import { dataClient } from "./utils/data_client.js";
 import "./style.css";
 
 
-const categories = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+const categories = Array.from({ length: 9 }, (_, i) => String(i + 1));
 const CELL_SIZE = 1;
 const CELL_PADDING = 0.1;
 const DEBUG = false;
@@ -327,16 +327,35 @@ function placePoint(group, name, col, row, cols, rows) {
   };
 }
 
+// function buildCellTooltips(cellGroups) {
+//   return Object.values(cellGroups).map((group) => ({
+//     x: group.x,
+//     y: group.y,
+//     name:
+//       `<div style="text-align: left; font-weight: bold; margin-top: 6px;">Issues:</div>` +
+//       `<ul style="padding-left: 10px; margin: 4px 0;">` +
+//       group.names.map((name) => `<li>${escapeHtml(name)}</li>`).join("") +
+//       `</ul>`,
+//   }));
+// }
+
 function buildCellTooltips(cellGroups) {
-  return Object.values(cellGroups).map((group) => ({
-    x: group.x,
-    y: group.y,
-    name:
-      `<div style="text-align: left; font-weight: bold; margin-top: 6px;">Issues:</div>` +
-      `<ul style="padding-left: 10px; margin: 4px 0;">` +
-      group.names.map((name) => `<li>${escapeHtml(name)}</li>`).join("") +
-      `</ul>`,
-  }));
+  return Object.values(cellGroups).map((group) => {
+    const itemsHtml = group.names
+      .map((name) => `<li>${escapeHtml(name)}</li>`)
+      .join("");
+
+    return {
+      x: group.x,
+      y: group.y,
+      name: `
+        <div style="text-align: left; font-weight: bold; margin-top: 6px;">Issues:</div>
+        <ul style="padding-left: 10px; margin: 4px 0;">
+          ${itemsHtml}
+        </ul>
+      `,
+    };
+  });
 }
 
 function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
@@ -753,47 +772,30 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
-// function enforceSquarePlot(chart) {
-//   if (chart.__resizingToSquare) return;
-
-//   const plotWidth = chart.plotWidth;
-//   const plotHeight = chart.plotHeight;
-
-//   if (Math.abs(plotWidth - plotHeight) < 1) return;
-
-//   const extraWidth = chart.chartWidth - plotWidth;
-//   const extraHeight = chart.chartHeight - plotHeight;
-//   const newPlotSize = Math.min(plotWidth, plotHeight);
-
-//   chart.__resizingToSquare = true;
-//   chart.setSize(
-//     newPlotSize + extraWidth,
-//     newPlotSize + extraHeight,
-//     false
-//   );
-//   chart.__resizingToSquare = false;
-// }
 function enforceSquarePlot(chart) {
-  if (chart.__squareFramePending) return;
+  if (chart.__squareFramePending || chart.__resizingToSquare) return;
+
+  const plotWidth = chart.plotWidth;
+  const plotHeight = chart.plotHeight;
+
+  if (Math.abs(plotWidth - plotHeight) < 1) return;
 
   chart.__squareFramePending = true;
 
   requestAnimationFrame(() => {
     chart.__squareFramePending = false;
-
     if (chart.__resizingToSquare) return;
 
-    const plotWidth = chart.plotWidth;
-    const plotHeight = chart.plotHeight;
+    const nextPlotWidth = chart.plotWidth;
+    const nextPlotHeight = chart.plotHeight;
+    if (Math.abs(nextPlotWidth - nextPlotHeight) < 1) return;
 
-    if (Math.abs(plotWidth - plotHeight) < 1) return;
-
-    const extraWidth = chart.chartWidth - plotWidth;
-    const extraHeight = chart.chartHeight - plotHeight;
-    const newPlotSize = Math.min(plotWidth, plotHeight);
+    const extraWidth = chart.chartWidth - nextPlotWidth;
+    const extraHeight = chart.chartHeight - nextPlotHeight;
+    const squareSize = Math.min(nextPlotWidth, nextPlotHeight);
 
     chart.__resizingToSquare = true;
-    chart.setSize(newPlotSize + extraWidth, newPlotSize + extraHeight, false);
+    chart.setSize(squareSize + extraWidth, squareSize + extraHeight, false);
     chart.__resizingToSquare = false;
   });
 }
