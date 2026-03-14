@@ -3,19 +3,22 @@
     "Issue Name": "Old Buildings",
     "Ignorance": 9,
     "Impact": 9,
-    "Readiness": 81
+    "Readiness": 81,
+    "Description": "Many buildings are old and not designed to be energy efficient, making it difficult to implement new technologies and reduce energy consumption."
   },
   {
     "Issue Name": "Sole Provider",
     "Ignorance": 6,
     "Impact": 9,
-    "Readiness": 54
+    "Readiness": 54,
+    "Description": "The energy market is often dominated by a few large providers, which can limit competition and innovation in the industry."
   },
   {
     "Issue Name": "Environmental",
     "Ignorance": 6,
     "Impact": 9,
-    "Readiness": 54
+    "Readiness": 54,
+    "Description": "The energy industry has a significant impact on the environment, and there is a growing need to transition to cleaner and more sustainable energy sources."
   },
   {
     "Issue Name": "Partnerships",

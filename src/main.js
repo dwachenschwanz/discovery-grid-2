@@ -3,15 +3,18 @@ import "highcharts/highcharts-more";
 import { dataClient } from "./utils/data_client.js";
 import "./style.css";
 
-
 const categories = Array.from({ length: 9 }, (_, i) => String(i + 1));
 const CELL_SIZE = 1;
 const CELL_PADDING = 0.1;
+const HIGHLIGHT_RADIUS = 0.6;
 const DEBUG = false;
 
 const log = (...args) => {
   if (DEBUG) console.log(...args);
 };
+
+const stickyNote = document.querySelector(".stickyNote");
+const stickyTitle = stickyNote?.querySelector(".stickyNoteTitle");
 
 const LAYOUTS = {
   1: { cols: 1, rows: 1, positions: [{ col: 0, row: 0, center: true }] },
@@ -214,10 +217,11 @@ async function main() {
 function buildBasePoints(data) {
   return data
     .filter((d) => Number(d.Impact) > 0 && Number(d.Ignorance) > 0)
-    .map((d) => ({
+    .map((d, idx) => ({
       x: Number(d.Impact) - 1,
       y: Number(d.Ignorance) - 1,
-      name: d["Issue Name"],
+      name: String(d["Issue Name"] ?? `Issue ${idx + 1}`),
+      description: d.Description ?? "",
     }));
 }
 
@@ -244,9 +248,9 @@ function groupData(basePoints) {
     const key = `${pt.x}-${pt.y}`;
 
     if (!cellGroups[key]) {
-      cellGroups[key] = { x: pt.x, y: pt.y, names: [] };
+      cellGroups[key] = { x: pt.x, y: pt.y, items: [] };
     }
-    cellGroups[key].names.push(pt.name);
+    cellGroups[key].items.push(pt);
 
     const quadrant = getQuadrant(pt.x, pt.y);
     if (quadrant) {
@@ -272,14 +276,18 @@ function buildJitteredPoints(cellGroups) {
   const jitteredPoints = [];
 
   Object.values(cellGroups).forEach((group) => {
-    const count = group.names.length;
+    const items = group.items ?? [];
+    const count = items.length;
     const layout = LAYOUTS[count];
 
     if (layout) {
       layout.positions.forEach((pos, i) => {
+        const item = items[i];
+        if (!item) return;
+
         if (pos.center) {
           jitteredPoints.push({
-            name: group.names[i],
+            name: item.name,
             x: group.x,
             y: group.y,
           });
@@ -289,7 +297,7 @@ function buildJitteredPoints(cellGroups) {
         jitteredPoints.push(
           placePoint(
             group,
-            group.names[i],
+            item.name,
             pos.col,
             pos.row,
             layout.cols,
@@ -304,11 +312,18 @@ function buildJitteredPoints(cellGroups) {
     const rows = Math.ceil(count / cols);
 
     for (let i = 0; i < count; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
+      const item = items[i];
+      if (!item) continue;
 
       jitteredPoints.push(
-        placePoint(group, group.names[i], col, row, cols, rows)
+        placePoint(
+          group,
+          item.name,
+          i % cols,
+          Math.floor(i / cols),
+          cols,
+          rows
+        )
       );
     }
   });
@@ -327,11 +342,10 @@ function placePoint(group, name, col, row, cols, rows) {
   };
 }
 
-
 function buildCellTooltips(cellGroups) {
   return Object.values(cellGroups).map((group) => {
-    const itemsHtml = group.names
-      .map((name) => `<li>${escapeHtml(name)}</li>`)
+    const itemsHtml = (group.items ?? [])
+      .map((item) => `<li>${escapeHtml(item.name)}</li>`)
       .join("");
 
     return {
@@ -348,22 +362,21 @@ function buildCellTooltips(cellGroups) {
 }
 
 function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
-  Highcharts.chart(
-    "container",
-    {
-      chart: {
-        type: "scatter",
-        marginRight: 120,
-        marginLeft: 120,
-        marginTop: 60,
-        zoomType: null,
-        events: {
+  Highcharts.chart("container", {
+    chart: {
+      type: "scatter",
+      marginRight: 120,
+      marginLeft: 120,
+      marginTop: 60,
+      zoomType: null,
+      events: {
         load: function () {
           const chart = this;
           chart.customLabels = [];
 
           addQuadrantLabels(chart);
           addIssueLabels(chart, quadrantGroups);
+          chart.labelsByRow = buildLabelsByRow(chart.customLabels);
 
           enforceSquarePlot(chart);
           positionLabels(chart);
@@ -373,201 +386,204 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
           positionLabels(this);
         },
       },
-      },
-      credits: {
-        enabled: false,
-      },
-      title: {
-        text: "Discovery Grid",
-      },
-      xAxis: {
-        title: {
-          text: "Impact",
-          y: -30,
-          style: {
-            fontSize: "18px",
-            fontWeight: "bold",
-          },
-        },
-        labels: {
-          style: {
-            fontSize: "18px",
-          },
-          y: 20,
-          formatter: function () {
-            return this.value === "5" ? "" : this.value;
-          },
-        },
-        categories,
-        min: 0,
-        max: 8,
-        gridLineWidth: 1,
-        gridLineColor: "#888",
-      },
-      yAxis: {
-        title: {
-          text: "Ignorance",
-          align: "middle",
-          rotation: 270,
-          x: 20,
-          style: {
-            fontSize: "18px",
-            fontWeight: "bold",
-          },
-        },
-        labels: {
-          style: {
-            fontSize: "18px",
-          },
-          x: -10,
-          formatter: function () {
-            return this.value === "5" ? "" : this.value;
-          },
-        },
-        categories,
-        min: 0,
-        max: 8,
-        gridLineWidth: 1,
-        gridLineColor: "#888",
-      },
-      tooltip: {
-        shared: false,
-        useHTML: true,
-        formatter: function () {
-          if (this.series.name !== "Cells") return false;
-          return this.point.name;
-        },
-      },
-      plotOptions: {
-        series: {
-          states: {
-            inactive: {
-              enabled: false,
-            },
-          },
-        },
-        scatter: {
-          marker: { radius: 6 },
-        },
-      },
-      series: [
-        {
-          name: "Points",
-          type: "scatter",
-          data: jitteredPoints,
-          showInLegend: false,
-          enableMouseTracking: false,
-          states: {
-            hover: {
-              enabled: false,
-            },
-          },
-          dataLabels: {
-            enabled: false,
-          },
-        },
-        {
-          name: "Cells",
-          type: "scatter",
-          data: cellTooltips,
-          enableMouseTracking: true,
-          marker: {
-            enabled: false,
-            symbol: "square",
-            radius: 30,
-            fillColor: "transparent",
-            lineWidth: 0,
-            states: {
-              hover: {
-                enabled: true,
-                lineColor: "#ff0000",
-                lineWidth: 3,
-                fillColor: "rgba(255, 0, 0, 0.2)",
-              },
-            },
-          },
-          dataLabels: {
-            enabled: false,
-          },
-          states: {
-            hover: {
-              halo: {
-                size: 0,
-              },
-              marker: {
-                enabled: false,
-              },
-            },
-          },
-          showInLegend: false,
-          clip: false,
-        },
-        {
-          name: "Manage",
-          type: "polygon",
-          color: "rgba(179, 255, 228, 0.627)",
-          animation: false,
-          enableMouseTracking: false,
-          showInLegend: false,
-          data: [
-            [-0.5, -0.5],
-            [3.5, -0.5],
-            [3.5, 3.5],
-            [-0.5, 3.5],
-          ],
-          zIndex: -10,
-        },
-        {
-          name: "Navigate",
-          type: "polygon",
-          color: "#a0c5f899",
-          animation: false,
-          enableMouseTracking: false,
-          showInLegend: false,
-          data: [
-            [3.5, -0.5],
-            [8.5, -0.5],
-            [8.5, 3.5],
-            [3.5, 3.5],
-          ],
-          zIndex: -10,
-        },
-        {
-          name: "Specify",
-          type: "polygon",
-          color: "rgba(255, 255, 150, 0.45)",
-          animation: false,
-          enableMouseTracking: false,
-          showInLegend: false,
-          data: [
-            [-0.5, 3.5],
-            [3.5, 3.5],
-            [3.5, 8.5],
-            [-0.5, 8.5],
-          ],
-          zIndex: -10,
-        },
-        {
-          name: "Discovery",
-          type: "polygon",
-          color: "#ffcce469",
-          animation: false,
-          enableMouseTracking: false,
-          showInLegend: false,
-          data: [
-            [3.5, 3.5],
-            [8.5, 3.5],
-            [8.5, 8.5],
-            [3.5, 8.5],
-          ],
-          zIndex: -10,
-        },
-      ],
     },
-    function (chart) {
-      bindCellHoverHighlight(chart);
-    }
-  );
+    credits: {
+      enabled: false,
+    },
+    title: {
+      text: "Discovery Grid",
+    },
+    xAxis: {
+      title: {
+        text: "Impact",
+        y: -30,
+        style: {
+          fontSize: "18px",
+          fontWeight: "bold",
+        },
+      },
+      labels: {
+        style: {
+          fontSize: "18px",
+        },
+        y: 20,
+        formatter: function () {
+          return this.value === "5" ? "" : this.value;
+        },
+      },
+      categories,
+      min: 0,
+      max: 8,
+      gridLineWidth: 1,
+      gridLineColor: "#888",
+    },
+    yAxis: {
+      title: {
+        text: "Ignorance",
+        align: "middle",
+        rotation: 270,
+        x: 20,
+        style: {
+          fontSize: "18px",
+          fontWeight: "bold",
+        },
+      },
+      labels: {
+        style: {
+          fontSize: "18px",
+        },
+        x: -10,
+        formatter: function () {
+          return this.value === "5" ? "" : this.value;
+        },
+      },
+      categories,
+      min: 0,
+      max: 8,
+      gridLineWidth: 1,
+      gridLineColor: "#888",
+    },
+    tooltip: {
+      shared: false,
+      useHTML: true,
+      formatter: function () {
+        if (this.series.name !== "Cells") return false;
+        return this.point.name;
+      },
+    },
+    plotOptions: {
+      series: {
+        states: {
+          inactive: {
+            enabled: false,
+          },
+        },
+      },
+      scatter: {
+        marker: { radius: 6 },
+      },
+    },
+    series: [
+      {
+        name: "Points",
+        type: "scatter",
+        data: jitteredPoints,
+        showInLegend: false,
+        enableMouseTracking: false,
+        states: {
+          hover: {
+            enabled: false,
+          },
+        },
+        dataLabels: {
+          enabled: false,
+        },
+      },
+      {
+        name: "Cells",
+        type: "scatter",
+        data: cellTooltips,
+        enableMouseTracking: true,
+        marker: {
+          enabled: true,
+          symbol: "square",
+          radius: 30,
+          fillColor: "rgba(255,255,255,0.001)",
+          lineWidth: 0,
+          states: {
+            hover: {
+              enabled: true,
+              lineColor: "#ff0000",
+              lineWidth: 3,
+              fillColor: "rgba(255, 0, 0, 0.2)",
+            },
+          },
+        },
+        point: {
+          events: {
+            mouseOver: function () {
+              highlightPointsForCell(this.series.chart, this.x, this.y);
+            },
+            mouseOut: function () {
+              clearPointHighlight(this.series.chart);
+            },
+          },
+        },
+        dataLabels: {
+          enabled: false,
+        },
+        states: {
+          hover: {
+            halo: {
+              size: 0,
+            },
+          },
+        },
+        showInLegend: false,
+        clip: false,
+      },
+      {
+        name: "Manage",
+        type: "polygon",
+        color: "rgba(179, 255, 228, 0.627)",
+        animation: false,
+        enableMouseTracking: false,
+        showInLegend: false,
+        data: [
+          [-0.5, -0.5],
+          [3.5, -0.5],
+          [3.5, 3.5],
+          [-0.5, 3.5],
+        ],
+        zIndex: -10,
+      },
+      {
+        name: "Navigate",
+        type: "polygon",
+        color: "#a0c5f899",
+        animation: false,
+        enableMouseTracking: false,
+        showInLegend: false,
+        data: [
+          [3.5, -0.5],
+          [8.5, -0.5],
+          [8.5, 3.5],
+          [3.5, 3.5],
+        ],
+        zIndex: -10,
+      },
+      {
+        name: "Specify",
+        type: "polygon",
+        color: "rgba(255, 255, 150, 0.45)",
+        animation: false,
+        enableMouseTracking: false,
+        showInLegend: false,
+        data: [
+          [-0.5, 3.5],
+          [3.5, 3.5],
+          [3.5, 8.5],
+          [-0.5, 8.5],
+        ],
+        zIndex: -10,
+      },
+      {
+        name: "Discovery",
+        type: "polygon",
+        color: "#ffcce469",
+        animation: false,
+        enableMouseTracking: false,
+        showInLegend: false,
+        data: [
+          [3.5, 3.5],
+          [8.5, 3.5],
+          [8.5, 8.5],
+          [3.5, 8.5],
+        ],
+        zIndex: -10,
+      },
+    ],
+  });
 }
 
 function addQuadrantLabels(chart) {
@@ -592,62 +608,60 @@ function addQuadrantLabels(chart) {
       })
       .add();
 
-    chart.customLabels.push({ x: q.x, y: q.y, label });
+    chart.customLabels.push({ x: q.x, y: q.y, label, isCellLabel: false });
   });
 }
 
 function addIssueLabels(chart, quadrantGroups) {
-  Object.entries(quadrantGroups).forEach(([, rows]) => {
-    Object.entries(rows).forEach(([y, points]) => {
-      points.forEach((pt, idx) => {
-        const label = chart.renderer
-          .text(`${pt.x + 1}-${pt.name}`, 0, 0)
-          .css({
-            fontSize: "10px",
-            color: "#000",
-          })
-          .attr({
-            align: "left",
-            zIndex: 5,
-          })
-          .add();
+  Object.values(quadrantGroups).forEach((rows) => {
+    Object.keys(rows)
+      .sort((a, b) => Number(a) - Number(b))
+      .forEach((y) => {
+        rows[y].forEach((pt) => {
+          const label = chart.renderer
+            .text(`${pt.x + 1}-${pt.name}`, 0, 0)
+            .css({
+              fontSize: "10px",
+              color: "#000",
+            })
+            .attr({
+              align: "left",
+              zIndex: 5,
+            })
+            .add();
 
-        const labelMeta = {
-          x: pt.x,
-          y: Number(y),
-          label,
-          isCellLabel: true,
-          lineOffset: idx * 12,
-          issueName: pt.name,
-        };
+          const meta = {
+            x: pt.x,
+            y: Number(y),
+            label,
+            isCellLabel: true,
+            issueName: pt.name,
+            description: pt.description ?? "",
+          };
 
-        chart.customLabels.push(labelMeta);
-
-        bindIssueLabelEvents(
-          chart,
-          label,
-          labelMeta.x,
-          labelMeta.y,
-          labelMeta.issueName
-        );
+          chart.customLabels.push(meta);
+          bindIssueLabelEvents(chart, label, meta.x, meta.y, meta.issueName, meta.description);
+        });
       });
-    });
   });
 }
 
-
-function positionLabels(chart) {
+function buildLabelsByRow(labels) {
   const labelsByRow = {};
 
-  chart.customLabels.forEach(
-    ({ x, y, label, isCellLabel = false, issueName }) => {
-      const key = y;
-      if (!labelsByRow[key]) {
-        labelsByRow[key] = [];
-      }
-      labelsByRow[key].push({ x, y, label, isCellLabel, issueName });
+  labels.forEach(({ x, y, label, isCellLabel = false, issueName }) => {
+    const key = y;
+    if (!labelsByRow[key]) {
+      labelsByRow[key] = [];
     }
-  );
+    labelsByRow[key].push({ x, y, label, isCellLabel, issueName });
+  });
+
+  return labelsByRow;
+}
+
+function positionLabels(chart) {
+  const labelsByRow = chart.labelsByRow ?? {};
 
   Object.values(labelsByRow).forEach((labelsInRow) => {
     const numLabels = labelsInRow.length;
@@ -656,41 +670,94 @@ function positionLabels(chart) {
     labelsInRow
       .slice()
       .reverse()
-      .forEach(({ x, label, isCellLabel, issueName }, idx) => {
-        const plotX = isCellLabel
-          ? x < 4
-            ? chart.xAxis[0].toValue(0)
-            : 8.6
-          : x;
-
+      .forEach(({ x, label, isCellLabel }, idx) => {
+        const plotX = getLabelPlotX(chart, x, isCellLabel);
         const relativeY = baseY - 0.5 + ((idx + 0.5) * 1) / numLabels;
 
-        const px = chart.xAxis[0].toPixels(plotX);
-        const py = chart.yAxis[0].toPixels(relativeY);
-
         label.attr({
-          x: px,
-          y: py,
+          x: chart.xAxis[0].toPixels(plotX),
+          y: chart.yAxis[0].toPixels(relativeY),
           align: isCellLabel ? "left" : "center",
         });
       });
   });
 }
 
-function bindIssueLabelEvents(chart, label, x, y, issueName) {
+function getLabelPlotX(chart, x, isCellLabel) {
+  if (!isCellLabel) return x;
+  return x < 4 ? chart.xAxis[0].toValue(0) : 8.6;
+}
+
+// function bindIssueLabelEvents(chart, label, x, y, issueName) {
+//   if (label.clickBound) return;
+
+//   const rectSeries = chart.series[1];
+
+//   label.css({
+//     color: "#000",
+//     textDecoration: "underline",
+//     fontWeight: "normal",
+//   });
+//   label.element.style.cursor = "pointer";
+//   label.element.setAttribute("title", "Click to highlight or filter");
+
+//   label.element.addEventListener("mouseenter", () => {
+//     label.css({ color: "#ff0000", fontWeight: "bold" });
+
+//     rectSeries.points.forEach((pt) => {
+//       if (pt.x === x && pt.y === y) {
+//         pt.setState("hover");
+//       }
+//     });
+
+//     const labelRect = label.element.getBoundingClientRect();
+//     const parentRect = label.element.parentElement?.getBoundingClientRect();
+//     if (!parentRect || !stickyNote) return;
+
+//     const verticalOffset = labelRect.top - parentRect.top;
+
+//     if (stickyTitle) {
+//       stickyTitle.textContent = issueName || label.textStr;
+//     }
+
+//     if (x > 3) {
+//       stickyNote.style.left = "100%";
+//       stickyNote.style.transform = "translateX(10px)";
+//     } else {
+//       stickyNote.style.left = "-10px";
+//       stickyNote.style.transform = "translateX(-100%)";
+//     }
+
+//     stickyNote.style.top = `${verticalOffset}px`;
+//     stickyNote.classList.add("show");
+//   });
+
+//   label.element.addEventListener("mouseleave", () => {
+//     label.css({ color: "#000", fontWeight: "normal" });
+//     rectSeries.points.forEach((pt) => pt.setState(""));
+//     stickyNote?.classList.remove("show");
+//   });
+
+//   label.element.addEventListener("click", () => {
+//     alert(`You clicked on label: ${label.textStr}`);
+//   });
+
+//   label.clickBound = true;
+// }
+
+function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
   if (label.clickBound) return;
 
   const rectSeries = chart.series[1];
-  const stickyNote = document.querySelector(".stickyNote");
-  const stickyTitle = stickyNote?.querySelector(".stickyNoteTitle");
+  const stickyBody = stickyNote?.querySelector(".stickyNoteBody");
 
   label.css({
     color: "#000",
     textDecoration: "underline",
     fontWeight: "normal",
   });
+
   label.element.style.cursor = "pointer";
-  label.element.setAttribute("title", "Click to highlight or filter");
 
   label.element.addEventListener("mouseenter", () => {
     label.css({ color: "#ff0000", fontWeight: "bold" });
@@ -708,7 +775,11 @@ function bindIssueLabelEvents(chart, label, x, y, issueName) {
     const verticalOffset = labelRect.top - parentRect.top;
 
     if (stickyTitle) {
-      stickyTitle.textContent = issueName || label.textStr;
+      stickyTitle.textContent = issueName;
+    }
+
+    if (stickyBody) {
+      stickyBody.textContent = description || "";
     }
 
     if (x > 3) {
@@ -729,34 +800,23 @@ function bindIssueLabelEvents(chart, label, x, y, issueName) {
     stickyNote?.classList.remove("show");
   });
 
-  label.element.addEventListener("click", () => {
-    alert(`You clicked on label: ${label.textStr}`);
-  });
-
   label.clickBound = true;
 }
 
-function bindCellHoverHighlight(chart) {
+function highlightPointsForCell(chart, cellX, cellY) {
   const mainSeries = chart.series[0];
-  const rectSeries = chart.series[1];
-  const highlightRadius = 0.6;
 
-  rectSeries.points.forEach((rect) => {
-    if (rect.graphic?.element) {
-      rect.graphic.element.addEventListener("mouseenter", () => {
-        mainSeries.points.forEach((pt) => {
-          const dx = pt.x - rect.x;
-          const dy = pt.y - rect.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          pt.setState(dist < highlightRadius ? "hover" : "");
-        });
-      });
-
-      rect.graphic.element.addEventListener("mouseleave", () => {
-        mainSeries.points.forEach((pt) => pt.setState(""));
-      });
-    }
+  mainSeries.points.forEach((pt) => {
+    const dx = pt.x - cellX;
+    const dy = pt.y - cellY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    pt.setState(dist < HIGHLIGHT_RADIUS ? "hover" : "");
   });
+}
+
+function clearPointHighlight(chart) {
+  const mainSeries = chart.series[0];
+  mainSeries.points.forEach((pt) => pt.setState(""));
 }
 
 function escapeHtml(str) {
@@ -770,10 +830,10 @@ function escapeHtml(str) {
 
 function enforceSquarePlot(chart) {
   if (chart.__squareFramePending || chart.__resizingToSquare) return;
+  if (!chart.container?.offsetWidth || !chart.container?.offsetHeight) return;
 
   const plotWidth = chart.plotWidth;
   const plotHeight = chart.plotHeight;
-
   if (Math.abs(plotWidth - plotHeight) < 1) return;
 
   chart.__squareFramePending = true;
