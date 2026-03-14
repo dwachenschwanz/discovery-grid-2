@@ -416,6 +416,7 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
       max: 8,
       gridLineWidth: 1,
       gridLineColor: "#888",
+      lineWidth: 0
     },
     yAxis: {
       title: {
