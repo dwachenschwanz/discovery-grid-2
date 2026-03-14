@@ -3,8 +3,6 @@ import "highcharts/highcharts-more";
 import { dataClient } from "./utils/data_client.js";
 import "./style.css";
 
-const MAX_VISIBLE_LABELS_PER_ROW = 3;
-
 const categories = Array.from({ length: 9 }, (_, i) => String(i + 1));
 const CELL_SIZE = 1;
 const CELL_PADDING = 0.1;
@@ -17,7 +15,6 @@ const log = (...args) => {
 
 const stickyNote = document.querySelector(".stickyNote");
 const stickyTitle = stickyNote?.querySelector(".stickyNoteTitle");
-const stickyBody = stickyNote?.querySelector(".stickyNoteBody");
 
 const LAYOUTS = {
   1: { cols: 1, rows: 1, positions: [{ col: 0, row: 0, center: true }] },
@@ -224,7 +221,7 @@ function buildBasePoints(data) {
       x: Number(d.Impact) - 1,
       y: Number(d.Ignorance) - 1,
       name: String(d["Issue Name"] ?? `Issue ${idx + 1}`),
-      description: String(d.Description ?? ""),
+      description: d.Description ?? "",
     }));
 }
 
@@ -355,8 +352,8 @@ function buildCellTooltips(cellGroups) {
       x: group.x,
       y: group.y,
       name: `
-        <div style="text-align: left; font-weight: 700; margin-top: 4px;">Issues</div>
-        <ul style="padding-left: 14px; margin: 6px 0 0 0;">
+        <div style="text-align: left; font-weight: bold; margin-top: 6px;">Issues:</div>
+        <ul style="padding-left: 10px; margin: 4px 0;">
           ${itemsHtml}
         </ul>
       `,
@@ -368,8 +365,8 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
   Highcharts.chart("container", {
     chart: {
       type: "scatter",
-      marginRight: 240,
-      marginLeft: 240,
+      marginRight: 120,
+      marginLeft: 120,
       marginTop: 60,
       zoomType: null,
       events: {
@@ -419,8 +416,7 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
       max: 8,
       gridLineWidth: 1,
       gridLineColor: "#888",
-      lineWidth: 0,
-      tickWidth: 0,
+      lineWidth: 0
     },
     yAxis: {
       title: {
@@ -447,8 +443,6 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
       max: 8,
       gridLineWidth: 1,
       gridLineColor: "#888",
-      lineWidth: 0,
-      tickWidth: 0,
     },
     tooltip: {
       shared: false,
@@ -502,7 +496,7 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
               enabled: true,
               lineColor: "#ff0000",
               lineWidth: 3,
-              fillColor: "rgba(255, 0, 0, 0.12)",
+              fillColor: "rgba(255, 0, 0, 0.2)",
             },
           },
         },
@@ -605,11 +599,10 @@ function addQuadrantLabels(chart) {
     const label = chart.renderer
       .text(q.name, 0, 0)
       .css({
-        color: "rgba(71, 85, 105, 0.22)",
-        fontSize: "32px",
-        fontWeight: "700",
+        color: "#aaa",
+        fontSize: "35px",
+        fontWeight: "bold",
         textAlign: "center",
-        letterSpacing: "0.5px",
       })
       .attr({
         align: "center",
@@ -625,21 +618,16 @@ function addIssueLabels(chart, quadrantGroups) {
     Object.keys(rows)
       .sort((a, b) => Number(a) - Number(b))
       .forEach((y) => {
-        const rowPoints = rows[y];
-        const visiblePoints = rowPoints.slice(0, MAX_VISIBLE_LABELS_PER_ROW);
-        const hiddenCount = Math.max(0, rowPoints.length - visiblePoints.length);
-
-        visiblePoints.forEach((pt) => {
+        rows[y].forEach((pt) => {
           const label = chart.renderer
-            .text(`${pt.x + 1} ${pt.name}`, 0, 0)
+            .text(`${pt.x + 1}-${pt.name}`, 0, 0)
             .css({
-              fontSize: "12px",
-              color: "#1f2937",
-              fontWeight: "500",
-              textOutline: "none",
+              fontSize: "10px",
+              color: "#000",
             })
             .attr({
-              zIndex: pt.x < 4 ? 20 : 10,
+              align: "left",
+              zIndex: 5,
             })
             .add();
 
@@ -650,59 +638,11 @@ function addIssueLabels(chart, quadrantGroups) {
             isCellLabel: true,
             issueName: pt.name,
             description: pt.description ?? "",
-            isSummaryLabel: false,
           };
 
           chart.customLabels.push(meta);
-
-          bindIssueLabelEvents(
-            chart,
-            label,
-            meta.x,
-            meta.y,
-            meta.issueName,
-            meta.description
-          );
+          bindIssueLabelEvents(chart, label, meta.x, meta.y, meta.issueName, meta.description);
         });
-
-        if (hiddenCount > 0) {
-          const anchorPoint = visiblePoints[visiblePoints.length - 1] ?? rowPoints[0];
-
-          const summaryLabel = chart.renderer
-            .text(`+${hiddenCount} more`, 0, 0)
-            .css({
-              fontSize: "11px",
-              color: "#64748b",
-              fontWeight: "600",
-              textOutline: "none",
-            })
-            .attr({
-              zIndex: anchorPoint.x < 4 ? 20 : 10,
-            })
-            .add();
-
-          chart.customLabels.push({
-            x: anchorPoint.x,
-            y: Number(y),
-            label: summaryLabel,
-            isCellLabel: true,
-            issueName: `${hiddenCount} more issues`,
-            description: rowPoints
-              .slice(MAX_VISIBLE_LABELS_PER_ROW)
-              .map((pt) => pt.name)
-              .join("\n"),
-            isSummaryLabel: true,
-          });
-
-          bindSummaryLabelEvents(
-            chart,
-            summaryLabel,
-            anchorPoint.x,
-            Number(y),
-            hiddenCount,
-            rowPoints.slice(MAX_VISIBLE_LABELS_PER_ROW)
-          );
-        }
       });
   });
 }
@@ -710,22 +650,19 @@ function addIssueLabels(chart, quadrantGroups) {
 function buildLabelsByRow(labels) {
   const labelsByRow = {};
 
-  labels.forEach(({ x, y, label, isCellLabel = false, issueName, description }) => {
+  labels.forEach(({ x, y, label, isCellLabel = false, issueName }) => {
     const key = y;
     if (!labelsByRow[key]) {
       labelsByRow[key] = [];
     }
-    labelsByRow[key].push({ x, y, label, isCellLabel, issueName, description });
+    labelsByRow[key].push({ x, y, label, isCellLabel, issueName });
   });
 
   return labelsByRow;
 }
 
 function positionLabels(chart) {
-  const labelsByRow = chart.labelsByRow ?? buildLabelsByRow(chart.customLabels);
-
-  const leftColumnX = chart.plotLeft - 34;
-  const rightColumnX = chart.plotLeft + chart.plotWidth + 20;
+  const labelsByRow = chart.labelsByRow ?? {};
 
   Object.values(labelsByRow).forEach((labelsInRow) => {
     const numLabels = labelsInRow.length;
@@ -735,31 +672,14 @@ function positionLabels(chart) {
       .slice()
       .reverse()
       .forEach(({ x, label, isCellLabel }, idx) => {
-        const relativeY = baseY - 0.38 + ((idx + 0.5) * 0.76) / numLabels;
-        // const relativeY = baseY - 0.42 + ((idx + 0.5) * 0.84) / numLabels;
-        const py = chart.yAxis[0].toPixels(relativeY);
-
-        if (!isCellLabel) {
-          label.attr({
-            x: chart.xAxis[0].toPixels(x),
-            y: py,
-            align: "center",
-          });
-          return;
-        }
-
-        const isLeftSide = x < 4;
+        const plotX = getLabelPlotX(chart, x, isCellLabel);
+        const relativeY = baseY - 0.5 + ((idx + 0.5) * 1) / numLabels;
 
         label.attr({
-          x: isLeftSide ? leftColumnX : rightColumnX,
-          y: py,
-          align: isLeftSide ? "right" : "left",
-          zIndex: isLeftSide ? 20 : 10,
+          x: chart.xAxis[0].toPixels(plotX),
+          y: chart.yAxis[0].toPixels(relativeY),
+          align: isCellLabel ? "left" : "center",
         });
-
-        if (isLeftSide) {
-          label.toFront();
-        }
       });
   });
 }
@@ -769,28 +689,79 @@ function getLabelPlotX(chart, x, isCellLabel) {
   return x < 4 ? chart.xAxis[0].toValue(0) : 8.6;
 }
 
+// function bindIssueLabelEvents(chart, label, x, y, issueName) {
+//   if (label.clickBound) return;
+
+//   const rectSeries = chart.series[1];
+
+//   label.css({
+//     color: "#000",
+//     textDecoration: "underline",
+//     fontWeight: "normal",
+//   });
+//   label.element.style.cursor = "pointer";
+//   label.element.setAttribute("title", "Click to highlight or filter");
+
+//   label.element.addEventListener("mouseenter", () => {
+//     label.css({ color: "#ff0000", fontWeight: "bold" });
+
+//     rectSeries.points.forEach((pt) => {
+//       if (pt.x === x && pt.y === y) {
+//         pt.setState("hover");
+//       }
+//     });
+
+//     const labelRect = label.element.getBoundingClientRect();
+//     const parentRect = label.element.parentElement?.getBoundingClientRect();
+//     if (!parentRect || !stickyNote) return;
+
+//     const verticalOffset = labelRect.top - parentRect.top;
+
+//     if (stickyTitle) {
+//       stickyTitle.textContent = issueName || label.textStr;
+//     }
+
+//     if (x > 3) {
+//       stickyNote.style.left = "100%";
+//       stickyNote.style.transform = "translateX(10px)";
+//     } else {
+//       stickyNote.style.left = "-10px";
+//       stickyNote.style.transform = "translateX(-100%)";
+//     }
+
+//     stickyNote.style.top = `${verticalOffset}px`;
+//     stickyNote.classList.add("show");
+//   });
+
+//   label.element.addEventListener("mouseleave", () => {
+//     label.css({ color: "#000", fontWeight: "normal" });
+//     rectSeries.points.forEach((pt) => pt.setState(""));
+//     stickyNote?.classList.remove("show");
+//   });
+
+//   label.element.addEventListener("click", () => {
+//     alert(`You clicked on label: ${label.textStr}`);
+//   });
+
+//   label.clickBound = true;
+// }
+
 function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
   if (label.clickBound) return;
 
   const rectSeries = chart.series[1];
+  const stickyBody = stickyNote?.querySelector(".stickyNoteBody");
 
   label.css({
-    // color: "#1f2937",
-    color: "#334155",
-    fontWeight: "500",
-    textDecoration: "none",
-    textOutline: "none",
+    color: "#000",
+    textDecoration: "underline",
+    fontWeight: "normal",
   });
 
-  if (label.element) {
-    label.element.style.cursor = "pointer";
-  }
+  label.element.style.cursor = "pointer";
 
   label.element.addEventListener("mouseenter", () => {
-    label.css({
-      color: "#0f172a",
-      fontWeight: "700",
-    });
+    label.css({ color: "#ff0000", fontWeight: "bold" });
 
     rectSeries.points.forEach((pt) => {
       if (pt.x === x && pt.y === y) {
@@ -813,14 +784,10 @@ function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
     }
 
     if (x > 3) {
-      stickyNote.classList.remove("left");
-      stickyNote.classList.add("right");
       stickyNote.style.left = "100%";
-      stickyNote.style.transform = "translateX(16px)";
+      stickyNote.style.transform = "translateX(10px)";
     } else {
-      stickyNote.classList.remove("right");
-      stickyNote.classList.add("left");
-      stickyNote.style.left = "-16px";
+      stickyNote.style.left = "-10px";
       stickyNote.style.transform = "translateX(-100%)";
     }
 
@@ -829,23 +796,9 @@ function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
   });
 
   label.element.addEventListener("mouseleave", () => {
-    label.css({
-      color: "#1f2937",
-      fontWeight: "500",
-    });
-
+    label.css({ color: "#000", fontWeight: "normal" });
     rectSeries.points.forEach((pt) => pt.setState(""));
     stickyNote?.classList.remove("show");
-  });
-
-  label.element.addEventListener("click", () => {
-    if (stickyTitle) {
-      stickyTitle.textContent = issueName;
-    }
-    if (stickyBody) {
-      stickyBody.textContent = description || "";
-    }
-    stickyNote?.classList.add("show");
   });
 
   label.clickBound = true;
@@ -902,88 +855,4 @@ function enforceSquarePlot(chart) {
     chart.setSize(squareSize + extraWidth, squareSize + extraHeight, false);
     chart.__resizingToSquare = false;
   });
-}
-
-function bindSummaryLabelEvents(chart, label, x, y, hiddenCount, hiddenPoints) {
-  if (label.clickBound) return;
-
-  const rectSeries = chart.series[1];
-
-  label.css({
-    color: "#64748b",
-    fontWeight: "600",
-    textDecoration: "none",
-    textOutline: "none",
-  });
-
-  label.element.style.cursor = "pointer";
-  label.element.setAttribute("title", "View hidden issues");
-
-  label.element.addEventListener("mouseenter", () => {
-    label.css({
-      color: "#334155",
-      fontWeight: "700",
-    });
-
-    rectSeries.points.forEach((pt) => {
-      if (pt.x === x && pt.y === y) {
-        pt.setState("hover");
-      }
-    });
-
-    const labelRect = label.element.getBoundingClientRect();
-    const parentRect = label.element.parentElement?.getBoundingClientRect();
-    const containerRect = chart.container.getBoundingClientRect();
-
-    if (!parentRect || !stickyNote) return;
-
-    if (stickyTitle) {
-      stickyTitle.textContent = `${hiddenCount} More Issues`;
-    }
-
-    if (stickyBody) {
-      stickyBody.textContent = hiddenPoints
-        .map((pt) => pt.name + (pt.description ? ` — ${pt.description}` : ""))
-        .join("\n\n");
-    }
-
-    const verticalOffset = labelRect.top - parentRect.top;
-    const noteWidth = stickyNote.offsetWidth || 260;
-    const gap = 16;
-
-    let leftPx;
-    let noteSide;
-
-    if (x > 3) {
-      leftPx = labelRect.right - containerRect.left + gap;
-      noteSide = "right";
-    } else {
-      leftPx = labelRect.left - containerRect.left - noteWidth - gap;
-      noteSide = "left";
-    }
-
-    const minLeft = 8;
-    const maxLeft = containerRect.width - noteWidth - 8;
-    leftPx = Math.max(minLeft, Math.min(leftPx, maxLeft));
-
-    stickyNote.classList.remove("left", "right");
-    stickyNote.classList.add(noteSide);
-
-    stickyNote.style.left = `${leftPx}px`;
-    stickyNote.style.transform = "none";
-    stickyNote.style.top = `${verticalOffset}px`;
-    stickyNote.classList.add("show");
-  });
-
-  label.element.addEventListener("mouseleave", () => {
-    label.css({
-      color: "#64748b",
-      fontWeight: "600",
-    });
-
-    rectSeries.points.forEach((pt) => pt.setState(""));
-    stickyNote?.classList.remove("show");
-  });
-
-  label.clickBound = true;
 }
