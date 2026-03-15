@@ -616,44 +616,43 @@ function addQuadrantLabels(chart) {
 function addIssueLabels(chart, quadrantGroups) {
   Object.values(quadrantGroups).forEach((rows) => {
     Object.keys(rows)
-      .sort((a, b) => Number(a) - Number(b))
+      .sort((a, b) => Number(b) - Number(a)) // higher row numbers first
       .forEach((y) => {
-        rows[y].forEach((pt) => {
-          const label = chart.renderer
-            .text(`${pt.x + 1}-${pt.name}`, 0, 0)
-            .css({
-              fontSize: "10px",
-              color: "#000",
-            })
-            // .attr({
-            //   align: "left",
-            //   zIndex: 5,
-            // })
-            .attr({
-              align: pt.x < 4 ? "right" : "left",
-              zIndex: 5,
-            })
-            .add();
+        rows[y]
+          .slice()
+          .sort((a, b) => b.x - a.x) // higher impact first within the row
+          .forEach((pt) => {
+            const label = chart.renderer
+              .text(`${pt.x + 1}-${pt.name}`, 0, 0)
+              .css({
+                fontSize: "10px",
+                color: "#000",
+              })
+              .attr({
+                align: pt.x < 4 ? "right" : "left",
+                zIndex: 5,
+              })
+              .add();
 
-          const meta = {
-            x: pt.x,
-            y: Number(y),
-            label,
-            isCellLabel: true,
-            issueName: pt.name,
-            description: pt.description ?? "",
-          };
+            const meta = {
+              x: pt.x,
+              y: Number(y),
+              label,
+              isCellLabel: true,
+              issueName: pt.name,
+              description: pt.description ?? "",
+            };
 
-          chart.customLabels.push(meta);
-          bindIssueLabelEvents(
-            chart,
-            label,
-            meta.x,
-            meta.y,
-            meta.issueName,
-            meta.description,
-          );
-        });
+            chart.customLabels.push(meta);
+            bindIssueLabelEvents(
+              chart,
+              label,
+              meta.x,
+              meta.y,
+              meta.issueName,
+              meta.description,
+            );
+          });
       });
   });
 }
