@@ -676,7 +676,8 @@ function addIssueLabels(chart, quadrantGroups) {
           .sort((a, b) => b.x - a.x) // higher impact first within the row
           .forEach((pt) => {
             const label = chart.renderer
-              .text(`${pt.x + 1}-${pt.name}`, 0, 0)
+              // .text(`${pt.x + 1}-${pt.name}`, 0, 0)
+              .text(`${pt.x + 1} · ${pt.name}`)
               .css({
                 fontSize: "10px",
                 color: "#000",
@@ -854,16 +855,35 @@ function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
   const rectSeries = chart.series[1];
   const stickyBody = stickyNote?.querySelector(".stickyNoteBody");
 
+  // label.css({
+  //   color: "#000",
+  //   textDecoration: "underline",
+  //   fontWeight: "normal",
+  // });
   label.css({
-    color: "#000",
-    textDecoration: "underline",
-    fontWeight: "normal",
+    color: "#333",
+    color: "#2c2c2c",
+    fontSize: "11px",
+    textDecoration: "none",
+    fontWeight: "500",
   });
 
-  label.element.style.cursor = "pointer";
+  // label.element.style.cursor = "pointer";
+  label.element.style.cursor = "help";
 
   label.element.addEventListener("mouseenter", () => {
-    label.css({ color: "#ff0000", fontWeight: "bold" });
+    // label.css({ color: "#ff0000", fontWeight: "bold" });
+    label.css({
+      color: "#d22",
+      fontWeight: "600",
+    });
+
+    // label.element.addEventListener("mouseenter", () => {
+    //   label.css({
+    //     color: "#d22",
+    //     fontWeight: "600",
+    //   });
+    // });
 
     rectSeries.points.forEach((pt) => {
       if (pt.x === x && pt.y === y) {
@@ -898,7 +918,13 @@ function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
   });
 
   label.element.addEventListener("mouseleave", () => {
-    label.css({ color: "#000", fontWeight: "normal" });
+    // label.css({ color: "#000", fontWeight: "normal" });
+    label.css({
+      color: "#333",
+      color: "#2c2c2c",
+      fontSize: "11px",
+      fontWeight: "500",
+    });
     rectSeries.points.forEach((pt) => pt.setState(""));
     stickyNote?.classList.remove("show");
   });
