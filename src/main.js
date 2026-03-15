@@ -396,7 +396,7 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
     xAxis: {
       title: {
         text: "Impact",
-        y: -30,
+        y: -10,
         style: {
           fontSize: "18px",
           fontWeight: "bold",
@@ -407,9 +407,9 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
           fontSize: "18px",
         },
         y: 20,
-        formatter: function () {
-          return this.value === "5" ? "" : this.value;
-        },
+        // formatter: function () {
+        //   return this.value === "5" ? "" : this.value;
+        // },
       },
       categories,
       min: 0,
@@ -444,6 +444,59 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
       gridLineWidth: 1,
       gridLineColor: "#888",
     },
+    // xAxis: {
+    //   title: {
+    //     text: "Impact",
+    //     margin: 20,
+    //     y: -20,
+    //     style: {
+    //       fontSize: "18px",
+    //       fontWeight: "bold",
+    //     },
+    //   },
+    //   labels: {
+    //     style: {
+    //       fontSize: "18px",
+    //     },
+    //     y: 20,
+    //     // formatter: function () {
+    //     //   return this.value === "5" ? "" : this.value;
+    //     // },
+    //   },
+    //   categories,
+    //   min: 0,
+    //   max: 8,
+    //   gridLineWidth: 1,
+    //   gridLineColor: "#888",
+    //   lineWidth: 0,
+    // },
+    // yAxis: {
+    //   title: {
+    //     text: "Ignorance",
+    //     align: "middle",
+    //     rotation: 270,
+    //     margin: 25,
+    //     x: 31,
+    //     style: {
+    //       fontSize: "18px",
+    //       fontWeight: "bold",
+    //     },
+    //   },
+    //   labels: {
+    //     style: {
+    //       fontSize: "18px",
+    //     },
+    //     x: -10,
+    //     formatter: function () {
+    //       return this.value === "5" ? "" : this.value;
+    //     },
+    //   },
+    //   categories,
+    //   min: 0,
+    //   max: 8,
+    //   gridLineWidth: 1,
+    //   gridLineColor: "#888",
+    // },
     tooltip: {
       shared: false,
       useHTML: true,
