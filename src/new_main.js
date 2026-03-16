@@ -2,7 +2,6 @@ import Highcharts from "highcharts";
 import "highcharts/highcharts-more";
 import { dataClient } from "./utils/data_client.js";
 import "./components/StickyNoteCard.js";
-// import { attachStickyTitleHelpers } from "./utils/sticky_note_title.js";
 import "./style.css";
 
 const categories = Array.from({ length: 9 }, (_, i) => String(i + 1));
@@ -204,103 +203,30 @@ const LAYOUTS = {
   },
 };
 
-const STOP_WORDS = new Set([
-  "a",
-  "an",
-  "and",
-  "are",
-  "as",
-  "at",
-  "be",
-  "but",
-  "by",
-  "for",
-  "from",
-  "has",
-  "have",
-  "in",
-  "into",
-  "is",
-  "it",
-  "of",
-  "on",
-  "or",
-  "that",
-  "the",
-  "their",
-  "they",
-  "this",
-  "to",
-  "was",
-  "were",
-  "will",
-  "with",
-  "want",
-  "needs",
-  "need",
-  "interested",
-  "looking",
-  "large",
-  "small",
-  "many",
-  "much",
-  "more",
-  "less",
-  "very",
-  "really",
-  "about",
-]);
-
-const PHRASE_RULES = [
-  {
-    pattern: /\bsingle consistent energy provider\b/i,
-    replace: "Sole Provider",
-  },
-  { pattern: /\bsingle energy provider\b/i, replace: "Sole Provider" },
-  { pattern: /\bbilling confusion\b/i, replace: "Billing Confusion" },
-  { pattern: /\bconfused about billing\b/i, replace: "Billing Confusion" },
-  { pattern: /\bpricing confusion\b/i, replace: "Pricing Clarity" },
-  { pattern: /\bdelay in permitting\b/i, replace: "Permitting Delay" },
-];
-
-function generateStickyTitle(description, maxWords = 4, maxChars = 24) {
-  if (!description) return "";
-
-  for (const rule of PHRASE_RULES) {
-    if (rule.pattern.test(description)) {
-      return rule.replace;
-    }
-  }
-
-  const words = description
-    .replace(/[^\w\s]/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
-
-  const filtered = words.filter((w) => !STOP_WORDS.has(w.toLowerCase()));
-
-  const selected = filtered.slice(0, maxWords);
-
-  let title = selected
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
-
-  if (title.length > maxChars) {
-    title = title.slice(0, maxChars).trim();
-  }
-
-  return title;
-}
-
 main();
 
 async function main() {
   try {
+    ensureLabelLayer();
+
     const data = await dataClient.getData("issues_data.json");
     const basePoints = buildBasePoints(data);
     init(basePoints);
   } catch (error) {
     console.error("Error fetching data:", error);
+  }
+}
+
+function ensureLabelLayer() {
+  const squareContainer = document.querySelector(".square-container");
+  if (!squareContainer) return;
+
+  let labelLayer = document.getElementById("label-layer");
+  if (!labelLayer) {
+    labelLayer = document.createElement("div");
+    labelLayer.id = "label-layer";
+    labelLayer.className = "label-layer";
+    squareContainer.appendChild(labelLayer);
   }
 }
 
@@ -310,10 +236,7 @@ function buildBasePoints(data) {
     .map((d, idx) => ({
       x: Number(d.Impact) - 1,
       y: Number(d.Ignorance) - 1,
-      // name: String(d["Issue Name"] ?? `Issue ${idx + 1}`),
-      name:
-        generateStickyTitle(d.Description) ||
-        String(d["Issue Name"] ?? `Issue ${idx + 1}`),
+      name: String(d["Issue Name"] ?? `Issue ${idx + 1}`),
       description: d.Description ?? "",
     }));
 }
@@ -459,7 +382,7 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
     chart: {
       type: "scatter",
       marginRight: 120,
-      marginLeft: 180,
+      marginLeft: 120,
       marginTop: 60,
       zoomType: null,
       events: {
@@ -469,14 +392,14 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
 
           addQuadrantLabels(chart);
           addIssueLabels(chart, quadrantGroups);
-          chart.labelsByRow = buildLabelsByRow(chart.customLabels);
 
           enforceSquarePlot(chart);
-          positionLabels(chart);
+          renderIssueNoteComponents(chart);
         },
         redraw: function () {
           enforceSquarePlot(this);
-          positionLabels(this);
+          renderIssueNoteComponents(this);
+          positionQuadrantLabels(this);
         },
       },
     },
@@ -489,7 +412,8 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
     xAxis: {
       title: {
         text: "Impact",
-        y: -10,
+        margin: 20,
+        y: 10,
         style: {
           fontSize: "18px",
           fontWeight: "bold",
@@ -500,9 +424,9 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
           fontSize: "18px",
         },
         y: 20,
-        // formatter: function () {
-        //   return this.value === "5" ? "" : this.value;
-        // },
+        formatter: function () {
+          return this.value === "5" ? "" : this.value;
+        },
       },
       categories,
       min: 0,
@@ -516,7 +440,8 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
         text: "Ignorance",
         align: "middle",
         rotation: 270,
-        x: 20,
+        margin: 25,
+        x: 0,
         style: {
           fontSize: "18px",
           fontWeight: "bold",
@@ -537,59 +462,6 @@ function renderChart({ jitteredPoints, cellTooltips, quadrantGroups }) {
       gridLineWidth: 1,
       gridLineColor: "#888",
     },
-    // xAxis: {
-    //   title: {
-    //     text: "Impact",
-    //     margin: 20,
-    //     y: -20,
-    //     style: {
-    //       fontSize: "18px",
-    //       fontWeight: "bold",
-    //     },
-    //   },
-    //   labels: {
-    //     style: {
-    //       fontSize: "18px",
-    //     },
-    //     y: 20,
-    //     // formatter: function () {
-    //     //   return this.value === "5" ? "" : this.value;
-    //     // },
-    //   },
-    //   categories,
-    //   min: 0,
-    //   max: 8,
-    //   gridLineWidth: 1,
-    //   gridLineColor: "#888",
-    //   lineWidth: 0,
-    // },
-    // yAxis: {
-    //   title: {
-    //     text: "Ignorance",
-    //     align: "middle",
-    //     rotation: 270,
-    //     margin: 25,
-    //     x: 31,
-    //     style: {
-    //       fontSize: "18px",
-    //       fontWeight: "bold",
-    //     },
-    //   },
-    //   labels: {
-    //     style: {
-    //       fontSize: "18px",
-    //     },
-    //     x: -10,
-    //     formatter: function () {
-    //       return this.value === "5" ? "" : this.value;
-    //     },
-    //   },
-    //   categories,
-    //   min: 0,
-    //   max: 8,
-    //   gridLineWidth: 1,
-    //   gridLineColor: "#888",
-    // },
     tooltip: {
       shared: false,
       useHTML: true,
@@ -755,50 +627,33 @@ function addQuadrantLabels(chart) {
       })
       .add();
 
-    chart.customLabels.push({ x: q.x, y: q.y, label, isCellLabel: false });
+    chart.customLabels.push({
+      x: q.x,
+      y: q.y,
+      label,
+      isCellLabel: false,
+    });
   });
+
+  positionQuadrantLabels(chart);
 }
 
 function addIssueLabels(chart, quadrantGroups) {
   Object.values(quadrantGroups).forEach((rows) => {
     Object.keys(rows)
-      .sort((a, b) => Number(b) - Number(a)) // higher row numbers first
+      .sort((a, b) => Number(b) - Number(a))
       .forEach((y) => {
         rows[y]
           .slice()
-          .sort((a, b) => b.x - a.x) // higher impact first within the row
+          .sort((a, b) => b.x - a.x)
           .forEach((pt) => {
-            const label = chart.renderer
-              // .text(`${pt.x + 1}-${pt.name}`, 0, 0)
-              .text(`${pt.x + 1} · ${pt.name}`)
-              .css({
-                fontSize: "10px",
-                color: "#000",
-              })
-              .attr({
-                align: pt.x < 4 ? "right" : "left",
-                zIndex: 5,
-              })
-              .add();
-
-            const meta = {
+            chart.customLabels.push({
               x: pt.x,
               y: Number(y),
-              label,
               isCellLabel: true,
               issueName: pt.name,
               description: pt.description ?? "",
-            };
-
-            chart.customLabels.push(meta);
-            bindIssueLabelEvents(
-              chart,
-              label,
-              meta.x,
-              meta.y,
-              meta.issueName,
-              meta.description,
-            );
+            });
           });
       });
   });
@@ -807,44 +662,43 @@ function addIssueLabels(chart, quadrantGroups) {
 function buildLabelsByRow(labels) {
   const labelsByRow = {};
 
-  labels.forEach(({ x, y, label, isCellLabel = false, issueName }) => {
-    const key = y;
+  labels.forEach((item) => {
+    const key = item.y;
     if (!labelsByRow[key]) {
       labelsByRow[key] = [];
     }
-    labelsByRow[key].push({ x, y, label, isCellLabel, issueName });
+    labelsByRow[key].push(item);
   });
 
   return labelsByRow;
 }
 
-// function positionLabels(chart) {
-//   const labelsByRow = chart.labelsByRow ?? {};
+function positionQuadrantLabels(chart) {
+  const quadrantLabels = (chart.customLabels ?? []).filter(
+    (item) => !item.isCellLabel && item.label,
+  );
 
-//   Object.values(labelsByRow).forEach((labelsInRow) => {
-//     const numLabels = labelsInRow.length;
-//     const baseY = labelsInRow[0].y;
+  quadrantLabels.forEach(({ x, y, label }) => {
+    label.attr({
+      x: chart.xAxis[0].toPixels(x),
+      y: chart.yAxis[0].toPixels(y),
+      align: "center",
+    });
+  });
+}
 
-//     labelsInRow
-//       .slice()
-//       .reverse()
-//       .forEach(({ x, label, isCellLabel }, idx) => {
-//         const plotX = getLabelPlotX(chart, x, isCellLabel);
-//         const relativeY = baseY - 0.5 + ((idx + 0.5) * 1) / numLabels;
+function renderIssueNoteComponents(chart) {
+  const layer = document.getElementById("label-layer");
+  if (!layer) return;
 
-//         label.attr({
-//           x: chart.xAxis[0].toPixels(plotX),
-//           y: chart.yAxis[0].toPixels(relativeY),
-//           align: isCellLabel ? "left" : "center",
-//         });
-//       });
-//   });
-// }
+  const labelsByRow = buildLabelsByRow(
+    (chart.customLabels ?? []).filter((item) => item.isCellLabel),
+  );
 
-function positionLabels(chart) {
-  const labelsByRow = chart.labelsByRow ?? {};
-  const LEFT_LABEL_PAD = 30;
-  const RIGHT_LABEL_PAD = 8;
+  layer.innerHTML = "";
+
+  const LEFT_LABEL_PAD = 40;
+  const RIGHT_LABEL_PAD = 10;
 
   Object.values(labelsByRow).forEach((labelsInRow) => {
     const numLabels = labelsInRow.length;
@@ -853,142 +707,59 @@ function positionLabels(chart) {
     labelsInRow
       .slice()
       .reverse()
-      .forEach(({ x, label, isCellLabel }, idx) => {
+      .forEach((meta, idx) => {
+        const { x, issueName, description } = meta;
+
         const relativeY = baseY - 0.5 + ((idx + 0.5) * 1) / numLabels;
         const pixelY = chart.yAxis[0].toPixels(relativeY);
-
-        if (!isCellLabel) {
-          label.attr({
-            x: chart.xAxis[0].toPixels(x),
-            y: pixelY,
-            align: "center",
-          });
-          return;
-        }
-
         const isLeftSide = x < 4;
+
         const pixelX = isLeftSide
           ? chart.plotLeft - LEFT_LABEL_PAD
           : chart.plotLeft + chart.plotWidth + RIGHT_LABEL_PAD;
 
-        label.attr({
-          x: pixelX,
-          y: pixelY,
-          align: isLeftSide ? "right" : "left",
-        });
+        const note = document.createElement("sticky-note-card");
+        note.setAttribute("title", `${x + 1}`);
+        note.setAttribute("description", issueName);
+        note.setAttribute("detail", description);
+        note.setAttribute("color", isLeftSide ? "#f7b5b2" : "#b9d7f5");
+        note.setAttribute("max-header-lines", "2");
+        note.setAttribute("max-text-lines", "3");
+        note.setAttribute("side", isLeftSide ? "left" : "right");
+
+        note.style.position = "absolute";
+        note.style.left = `${pixelX}px`;
+        note.style.top = `${pixelY}px`;
+        note.style.transform = isLeftSide
+          ? "translate(-100%, -50%)"
+          : "translate(0, -50%)";
+        note.style.pointerEvents = "auto";
+
+        bindIssueComponentEvents(
+          chart,
+          note,
+          x,
+          meta.y,
+          issueName,
+          description,
+        );
+        layer.appendChild(note);
       });
   });
 }
 
-function getLabelPlotX(chart, x, isCellLabel) {
-  if (!isCellLabel) return x;
-  return x < 4 ? chart.xAxis[0].toValue(0) : 8.6;
-}
-
-// function bindIssueLabelEvents(chart, label, x, y, issueName) {
-//   if (label.clickBound) return;
-
-//   const rectSeries = chart.series[1];
-
-//   label.css({
-//     color: "#000",
-//     textDecoration: "underline",
-//     fontWeight: "normal",
-//   });
-//   label.element.style.cursor = "pointer";
-//   label.element.setAttribute("title", "Click to highlight or filter");
-
-//   label.element.addEventListener("mouseenter", () => {
-//     label.css({ color: "#ff0000", fontWeight: "bold" });
-
-//     rectSeries.points.forEach((pt) => {
-//       if (pt.x === x && pt.y === y) {
-//         pt.setState("hover");
-//       }
-//     });
-
-//     const labelRect = label.element.getBoundingClientRect();
-//     const parentRect = label.element.parentElement?.getBoundingClientRect();
-//     if (!parentRect || !stickyNote) return;
-
-//     const verticalOffset = labelRect.top - parentRect.top;
-
-//     if (stickyTitle) {
-//       stickyTitle.textContent = issueName || label.textStr;
-//     }
-
-//     if (x > 3) {
-//       stickyNote.style.left = "100%";
-//       stickyNote.style.transform = "translateX(10px)";
-//     } else {
-//       stickyNote.style.left = "-10px";
-//       stickyNote.style.transform = "translateX(-100%)";
-//     }
-
-//     stickyNote.style.top = `${verticalOffset}px`;
-//     stickyNote.classList.add("show");
-//   });
-
-//   label.element.addEventListener("mouseleave", () => {
-//     label.css({ color: "#000", fontWeight: "normal" });
-//     rectSeries.points.forEach((pt) => pt.setState(""));
-//     stickyNote?.classList.remove("show");
-//   });
-
-//   label.element.addEventListener("click", () => {
-//     alert(`You clicked on label: ${label.textStr}`);
-//   });
-
-//   label.clickBound = true;
-// }
-
-function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
-  if (label.clickBound) return;
+function bindIssueComponentEvents(chart, note, x, y, issueName, description) {
+  if (note.__eventsBound) return;
 
   const rectSeries = chart.series[1];
   const stickyBody = stickyNote?.querySelector(".stickyNoteBody");
 
-  // label.css({
-  //   color: "#000",
-  //   textDecoration: "underline",
-  //   fontWeight: "normal",
-  // });
-  label.css({
-    color: "#333",
-    color: "#2c2c2c",
-    fontSize: "11px",
-    textDecoration: "none",
-    fontWeight: "500",
-  });
-
-  // label.element.style.cursor = "pointer";
-  label.element.style.cursor = "help";
-
-  label.element.addEventListener("mouseenter", () => {
-    // label.css({ color: "#ff0000", fontWeight: "bold" });
-    label.css({
-      color: "#d22",
-      fontWeight: "600",
-    });
-
-    // label.element.addEventListener("mouseenter", () => {
-    //   label.css({
-    //     color: "#d22",
-    //     fontWeight: "600",
-    //   });
-    // });
-
+  note.addEventListener("mouseenter", () => {
     rectSeries.points.forEach((pt) => {
       if (pt.x === x && pt.y === y) {
         pt.setState("hover");
       }
     });
-
-    const labelRect = label.element.getBoundingClientRect();
-    const parentRect = label.element.parentElement?.getBoundingClientRect();
-    if (!parentRect || !stickyNote) return;
-
-    const verticalOffset = labelRect.top - parentRect.top;
 
     if (stickyTitle) {
       stickyTitle.textContent = issueName;
@@ -997,6 +768,10 @@ function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
     if (stickyBody) {
       stickyBody.textContent = description || "";
     }
+
+    const containerRect = chart.container.getBoundingClientRect();
+    const noteRect = note.getBoundingClientRect();
+    const verticalOffset = noteRect.top - containerRect.top;
 
     if (x > 3) {
       stickyNote.style.left = "100%";
@@ -1010,19 +785,12 @@ function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
     stickyNote.classList.add("show");
   });
 
-  label.element.addEventListener("mouseleave", () => {
-    // label.css({ color: "#000", fontWeight: "normal" });
-    label.css({
-      color: "#333",
-      color: "#2c2c2c",
-      fontSize: "11px",
-      fontWeight: "500",
-    });
+  note.addEventListener("mouseleave", () => {
     rectSeries.points.forEach((pt) => pt.setState(""));
     stickyNote?.classList.remove("show");
   });
 
-  label.clickBound = true;
+  note.__eventsBound = true;
 }
 
 function highlightPointsForCell(chart, cellX, cellY) {

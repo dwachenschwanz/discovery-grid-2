@@ -129,3 +129,16 @@ body {
   color: #000;
   pointer-events: none;
 }
+
+
+/* .label-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.label-layer sticky-note-card {
+  position: absolute;
+  pointer-events: auto;
+} */
