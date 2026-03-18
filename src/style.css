@@ -71,7 +71,7 @@ body {
   /* left: 100%; Align to the right edge of .square-container */
   /* top: 30%;
   right: -10px; */
-  transform: translatex(-100%); */
+  /* transform: translatex(-100%); */ */
   /*transform:translateY(-50%)translateX(10px)Centervertically,moverightby10px*/
   left: 100%;
   transform: translateY(-50%) translateX(10px);
@@ -99,6 +99,33 @@ body {
   font-size: 0.9em;
   line-height: 1.2;
   flex-grow: 1;
+}
+
+.stickyNoteTitle {
+  font-weight: 700;          /* make it bold */
+  margin-bottom: 6px;
+  font-size: 0.95em;         /* slightly prominent */
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.stickyNoteBody {
+  overflow: hidden;
+  position: relative;
+  font-size: 0.78em;
+  line-height: 1.2;
+  color: #333;
+  max-height: calc(1.2em * 6);
+}
+
+.stickyNoteBody::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, rgba(255,235,59,0), #ffeb3b);
 }
 
 .stickyNote.show {
