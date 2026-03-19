@@ -898,7 +898,7 @@ function positionLabels(chart) {
   const quadrantLabels = grouped.quadrants ?? [];
 
   const RIGHT_X = chart.plotLeft + chart.plotWidth + 8;
-  const ISSUE_TEXT_X = RIGHT_X + 20;
+  const ISSUE_TEXT_X = RIGHT_X + 24; // fixed column for all issue text
 
   quadrantLabels.forEach(({ x, y, label }) => {
     label.attr({
@@ -964,10 +964,8 @@ function positionLabels(chart) {
           align: "left",
         });
 
-        const prefixWidth = it.prefixLabel.getBBox().width;
-
         it.label.attr({
-          x: RIGHT_X + prefixWidth + 4,
+          x: ISSUE_TEXT_X,
           y: currentY,
           align: "left",
         });
