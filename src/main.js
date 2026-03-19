@@ -977,7 +977,7 @@ function positionLabels(chart) {
   const quadrantLabels = grouped.quadrants ?? [];
 
   const RIGHT_X = chart.plotLeft + chart.plotWidth + 8;
-  const ISSUE_TEXT_X = RIGHT_X + 28;
+  const ISSUE_TEXT_X = RIGHT_X + 22;
 
   quadrantLabels.forEach(({ x, y, label }) => {
     label.attr({
