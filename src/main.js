@@ -11,6 +11,13 @@ const CELL_PADDING = 0.1;
 const HIGHLIGHT_RADIUS = 0.6;
 const DEBUG = false;
 
+const QUADRANT_COLORS = {
+  Discovery: "#d63384", // pink
+  Navigate: "#2f80ed", // blue
+  Specify: "#c9a400", // yellow/gold (darker for readability)
+  Manage: "#2ca58d", // green
+};
+
 const log = (...args) => {
   if (DEBUG) console.log(...args);
 };
@@ -753,83 +760,149 @@ function addQuadrantLabels(chart) {
 }
 
 function addIssueLabels(chart, quadrantGroups, cellGroups) {
-  const allIssues = [];
+  const quadrantOrder = ["Discovery", "Navigate", "Specify", "Manage"];
 
-  Object.values(quadrantGroups).forEach((rows) => {
-    Object.keys(rows).forEach((y) => {
-      rows[y].forEach((pt) => {
+  const quadrantMap = {
+    Q4: "Discovery",
+    Q2: "Navigate",
+    Q3: "Specify",
+    Q1: "Manage",
+  };
+
+  const grouped = {
+    Discovery: [],
+    Navigate: [],
+    Specify: [],
+    Manage: [],
+  };
+
+  Object.entries(quadrantGroups).forEach(([qKey, rows]) => {
+    const quadrantName = quadrantMap[qKey];
+
+    Object.values(rows).forEach((pts) => {
+      pts.forEach((pt) => {
         const groupKey = `${pt.x}-${pt.y}`;
         const cellLetter = cellGroups[groupKey]?.cellLetter ?? "";
 
-        allIssues.push({
-          x: pt.x,
-          y: Number(y),
+        grouped[quadrantName].push({
           cellLetter,
           issueName: pt.name,
           description: pt.description ?? "",
+          x: pt.x,
+          y: pt.y,
         });
       });
     });
   });
 
-  allIssues.sort((a, b) => {
-    const letterCompare = a.cellLetter.localeCompare(b.cellLetter);
-    if (letterCompare !== 0) return letterCompare;
-    return a.issueName.localeCompare(b.issueName);
+  quadrantOrder.forEach((q) => {
+    grouped[q].sort((a, b) => {
+      const letterCompare = a.cellLetter.localeCompare(b.cellLetter);
+      if (letterCompare !== 0) return letterCompare;
+      return a.issueName.localeCompare(b.issueName);
+    });
   });
 
-  allIssues.forEach((item, index) => {
-    const label = chart.renderer
-      .text(`${item.cellLetter} · ${item.issueName}`)
+  quadrantOrder.forEach((quadrantName) => {
+    const items = grouped[quadrantName];
+    if (!items.length) return;
+
+    const header = chart.renderer
+      .text(quadrantName)
       .css({
-        fontSize: "10px",
-        color: "#000",
+        fontSize: "12px",
+        fontWeight: "bold",
+        color: QUADRANT_COLORS[quadrantName],
       })
       .attr({
         align: "left",
-        zIndex: 5,
+        zIndex: 6,
       })
       .add();
 
-    const meta = {
-      x: item.x,
-      y: item.y,
-      listIndex: index,
-      label,
-      isCellLabel: true,
-      issueName: item.issueName,
-      description: item.description,
-    };
+    chart.customLabels.push({
+      isHeader: true,
+      label: header,
+      quadrant: quadrantName,
+    });
 
-    chart.customLabels.push(meta);
-    bindIssueLabelEvents(
-      chart,
-      label,
-      meta.x,
-      meta.y,
-      meta.issueName,
-      meta.description,
-    );
+    items.forEach((item) => {
+      const prefixLabel = chart.renderer
+        .text(`${item.cellLetter} ·`)
+        .css({
+          fontSize: "11px",
+          fontWeight: "500",
+          color: QUADRANT_COLORS[quadrantName],
+        })
+        .attr({
+          align: "left",
+          zIndex: 5,
+        })
+        .add();
+
+      const issueLabel = chart.renderer
+        .text(item.issueName)
+        .css({
+          fontSize: "11px",
+          fontWeight: "500",
+          color: QUADRANT_COLORS[quadrantName],
+        })
+        .attr({
+          align: "left",
+          zIndex: 5,
+        })
+        .add();
+
+      const meta = {
+        x: item.x,
+        y: item.y,
+        prefixLabel,
+        label: issueLabel,
+        isCellLabel: true,
+        quadrant: quadrantName,
+        cellLetter: item.cellLetter,
+        issueName: item.issueName,
+        description: item.description,
+      };
+
+      chart.customLabels.push(meta);
+
+      bindIssueLabelEvents(
+        chart,
+        prefixLabel,
+        issueLabel,
+        meta.x,
+        meta.y,
+        meta.issueName,
+        meta.description,
+        meta.quadrant,
+      );
+    });
   });
 }
 
 function buildLabelsByRow(labels) {
-  const issueLabels = labels.filter((item) => item.isCellLabel);
-  const quadrantLabels = labels.filter((item) => !item.isCellLabel);
-
   return {
-    issueLabels,
-    quadrantLabels,
+    headers: labels.filter((l) => l.isHeader),
+    issues: labels.filter((l) => l.isCellLabel),
+    quadrants: labels.filter((l) => !l.isHeader && !l.isCellLabel),
   };
 }
 
 function positionLabels(chart) {
-  const grouped = chart.labelsByRow ?? { issueLabels: [], quadrantLabels: [] };
-  const issueLabels = grouped.issueLabels ?? [];
-  const quadrantLabels = grouped.quadrantLabels ?? [];
-  const RIGHT_LABEL_PAD = 8;
+  const grouped = chart.labelsByRow ?? {
+    headers: [],
+    issues: [],
+    quadrants: [],
+  };
 
-  // Keep quadrant labels as-is
+  const headers = grouped.headers ?? [];
+  const issues = grouped.issues ?? [];
+  const quadrantLabels = grouped.quadrants ?? [];
+
+  const RIGHT_X = chart.plotLeft + chart.plotWidth + 8;
+  const ISSUE_TEXT_X = RIGHT_X + 22; // fixed start for issue text
+
   quadrantLabels.forEach(({ x, y, label }) => {
     label.attr({
       x: chart.xAxis[0].toPixels(x),
@@ -838,103 +911,176 @@ function positionLabels(chart) {
     });
   });
 
-  // --- GROUP BY LETTER ---
-  const groups = {};
-  issueLabels.forEach((item) => {
-    const text = item.label.textStr || "";
-    const letter = text.split(" · ")[0] || "";
+  const quadrantOrder = ["Discovery", "Navigate", "Specify", "Manage"];
 
-    if (!groups[letter]) groups[letter] = [];
-    groups[letter].push(item);
+  const groupedIssues = {};
+  const groupedHeaders = {};
+
+  quadrantOrder.forEach((q) => {
+    groupedIssues[q] = [];
   });
 
-  const sortedLetters = Object.keys(groups).sort();
+  issues.forEach((item) => {
+    groupedIssues[item.quadrant].push(item);
+  });
 
-  // --- LAYOUT SETTINGS ---
-  const topY = chart.plotTop + 10;
-  const RIGHT_X = chart.plotLeft + chart.plotWidth + RIGHT_LABEL_PAD;
+  headers.forEach((h) => {
+    groupedHeaders[h.quadrant] = h;
+  });
 
-  const groupGap = 14;   // space between A/B/C groups
-  const itemGap = 10;    // tight spacing within a group
+  let currentY = chart.plotTop + 10;
 
-  let currentY = topY;
+  const headerGap = 16;
+  const itemGap = 10;
+  const groupGap = 14;
 
-  sortedLetters.forEach((letter) => {
-    const items = groups[letter];
+  quadrantOrder.forEach((q) => {
+    const items = groupedIssues[q];
+    if (!items.length) return;
 
-    items.forEach((item, index) => {
-      item.label.attr({
-        x: RIGHT_X,
+    const header = groupedHeaders[q];
+    if (header) {
+      // header.label.attr({
+      //   x: RIGHT_X,
+      //   y: currentY,
+      //   align: "left",
+      // });
+      header.label.attr({
+        x: ISSUE_TEXT_X,
         y: currentY,
         align: "left",
       });
+      currentY += headerGap;
+    }
 
-      currentY += itemGap;
+    const byLetter = {};
+    items.forEach((it) => {
+      if (!byLetter[it.cellLetter]) byLetter[it.cellLetter] = [];
+      byLetter[it.cellLetter].push(it);
     });
 
-    // extra spacing after each group
+    const sortedLetters = Object.keys(byLetter).sort();
+
+    sortedLetters.forEach((letter) => {
+      const letterItems = byLetter[letter];
+
+      letterItems.forEach((it) => {
+        it.prefixLabel.attr({
+          x: RIGHT_X,
+          y: currentY,
+          align: "left",
+        });
+
+        it.label.attr({
+          x: ISSUE_TEXT_X,
+          y: currentY,
+          align: "left",
+        });
+
+        currentY += itemGap;
+      });
+
+      currentY += 6;
+    });
+
     currentY += groupGap;
   });
 }
-
-function bindIssueLabelEvents(chart, label, x, y, issueName, description) {
-  if (label.clickBound) return;
+function bindIssueLabelEvents(
+  chart,
+  prefixLabel,
+  issueLabel,
+  x,
+  y,
+  issueName,
+  description,
+  quadrant,
+) {
+  if (issueLabel.clickBound) return;
 
   const rectSeries = chart.series[1];
   const stickyBody = stickyNote?.querySelector(".stickyNoteBody");
+  const baseColor = QUADRANT_COLORS[quadrant] || "#2c2c2c";
 
-  label.css({
-    color: "#2c2c2c",
-    fontSize: "11px",
-    textDecoration: "none",
-    fontWeight: "500",
-  });
-
-  label.element.style.cursor = "help";
-
-  label.element.addEventListener("mouseenter", () => {
-    label.css({
-      color: "#d22",
-      fontWeight: "600",
-    });
-
-    rectSeries.points.forEach((pt) => {
-      if (pt.x === x && pt.y === y) {
-        pt.setState("hover");
-      }
-    });
-
-    const labelRect = label.element.getBoundingClientRect();
-    const parentRect = label.element.parentElement?.getBoundingClientRect();
-    if (!parentRect || !stickyNote) return;
-
-    const verticalOffset = labelRect.top - parentRect.top;
-
-    if (stickyTitle) {
-      stickyTitle.textContent = issueName;
-    }
-
-    if (stickyBody) {
-      stickyBody.textContent = description || "";
-    }
-
-    stickyNote.style.left = "100%";
-    stickyNote.style.transform = "translateX(10px)";
-    stickyNote.style.top = `${verticalOffset}px`;
-    stickyNote.classList.add("show");
-  });
-
-  label.element.addEventListener("mouseleave", () => {
-    label.css({
-      color: "#2c2c2c",
+  const applyBaseStyle = () => {
+    prefixLabel.css({
+      color: baseColor,
       fontSize: "11px",
       fontWeight: "500",
+      textDecoration: "none",
     });
-    rectSeries.points.forEach((pt) => pt.setState(""));
-    stickyNote?.classList.remove("show");
+
+    issueLabel.css({
+      color: baseColor,
+      fontSize: "11px",
+      fontWeight: "500",
+      textDecoration: "none",
+    });
+  };
+
+  const applyHoverStyle = () => {
+    prefixLabel.css({
+      color: baseColor,
+      fontSize: "11px",
+      fontWeight: "700",
+    });
+
+    issueLabel.css({
+      color: baseColor,
+      fontSize: "11px",
+      fontWeight: "700",
+    });
+  };
+
+  applyBaseStyle();
+
+  [prefixLabel.element, issueLabel.element].forEach((el) => {
+    el.style.cursor = "help";
+
+    el.addEventListener("mouseenter", () => {
+      applyHoverStyle();
+
+      rectSeries.points.forEach((pt) => {
+        if (pt.x === x && pt.y === y) {
+          pt.setState("hover");
+        }
+      });
+
+      const labelRect = issueLabel.element.getBoundingClientRect();
+      const parentRect =
+        issueLabel.element.parentElement?.getBoundingClientRect();
+      if (!parentRect || !stickyNote) return;
+
+      const verticalOffset = labelRect.top - parentRect.top;
+
+      if (stickyTitle) {
+        stickyTitle.textContent = issueName;
+      }
+
+      if (stickyBody) {
+        stickyBody.textContent = description || "";
+      }
+
+      stickyNote.style.left = "100%";
+      stickyNote.style.transform = "translateX(10px)";
+      stickyNote.style.top = `${verticalOffset}px`;
+      stickyNote.classList.add("show");
+    });
+
+    el.addEventListener("mouseleave", () => {
+      applyBaseStyle();
+
+      rectSeries.points.forEach((pt) => {
+        if (pt.x === x && pt.y === y) {
+          pt.setState("");
+        }
+      });
+
+      stickyNote?.classList.remove("show");
+    });
   });
 
-  label.clickBound = true;
+  issueLabel.clickBound = true;
 }
 
 function highlightPointsForCell(chart, cellX, cellY) {
