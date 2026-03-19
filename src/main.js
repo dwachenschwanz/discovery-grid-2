@@ -908,7 +908,7 @@ function positionLabels(chart) {
     });
   });
 
-  const quadrantOrder = ["Discovery", "Navigate", "Specify", "Manage"];
+  const quadrantOrder = ["Discovery", "Specify", "Navigate", "Manage"];
 
   const groupedIssues = {};
   const groupedHeaders = {};
