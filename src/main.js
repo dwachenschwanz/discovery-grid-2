@@ -344,10 +344,9 @@ function buildBasePoints(data) {
     .map((d, idx) => ({
       x: Number(d.Impact) - 1,
       y: Number(d.Ignorance) - 1,
-      // name:
-      //   generateStickyTitle(d.Description) ||
-      //   String(d["Issue Name"] ?? `Issue ${idx + 1}`),
-      name: String(d["Issue Name"] ?? `Issue ${idx + 1}`),
+      name:
+        generateStickyTitle(d.Description) ||
+        String(d["Issue Name"] ?? `Issue ${idx + 1}`),
       description: d.Description ?? "",
     }));
 }
@@ -399,53 +398,6 @@ function getQuadrant(x, y) {
   if (x >= 0 && x <= 3 && y >= 4 && y <= 8) return "Q3";
   if (x >= 4 && x <= 8 && y >= 4 && y <= 8) return "Q4";
   return null;
-}
-
-function getQuadrantNameFromPoint(x, y) {
-  const quadrantKey = getQuadrant(x, y);
-
-  const quadrantMap = {
-    Q4: "Discovery",
-    Q3: "Specify",
-    Q2: "Navigate",
-    Q1: "Manage",
-  };
-
-  return quadrantMap[quadrantKey] || null;
-}
-
-function getQuadrantHoverStyle(x, y) {
-  const quadrantName = getQuadrantNameFromPoint(x, y);
-  const baseColor = QUADRANT_COLORS[quadrantName];
-
-  if (!baseColor) {
-    return {
-      lineColor: "#666",
-      fillColor: "rgba(120, 120, 120, 0.18)",
-    };
-  }
-
-  return {
-    lineColor: baseColor,
-    fillColor: hexToRgba(baseColor, 0.18),
-  };
-}
-
-function hexToRgba(hex, alpha) {
-  const normalized = hex.replace("#", "");
-  const value =
-    normalized.length === 3
-      ? normalized
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : normalized;
-
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function buildJitteredPoints(cellGroups) {
@@ -512,11 +464,6 @@ function buildCellHoverPoints(cellGroups) {
     x: group.x,
     y: group.y,
     cellLetter: group.cellLetter,
-    marker: {
-      fillColor: "rgba(255,255,255,0.001)",
-      lineColor: "transparent",
-      lineWidth: 0,
-    },
   }));
 }
 
@@ -658,50 +605,23 @@ function renderChart({
           symbol: "square",
           radius: 30,
           fillColor: "rgba(255,255,255,0.001)",
-          lineColor: "transparent",
           lineWidth: 0,
           states: {
             hover: {
               enabled: true,
+              lineColor: "#ff0000",
               lineWidth: 3,
+              fillColor: "rgba(255, 0, 0, 0.2)",
             },
           },
         },
         point: {
           events: {
             mouseOver: function () {
-              const hoverStyle = getQuadrantHoverStyle(this.x, this.y);
-
-              this.update(
-                {
-                  marker: {
-                    fillColor: hoverStyle.fillColor,
-                    lineColor: hoverStyle.lineColor,
-                    lineWidth: 3,
-                  },
-                },
-                false,
-              );
-
-              this.series.chart.redraw(false);
-
               highlightPointsForCell(this.series.chart, this.x, this.y);
               highlightIssueLabelsForCell(this.series.chart, this.x, this.y);
             },
             mouseOut: function () {
-              this.update(
-                {
-                  marker: {
-                    fillColor: "rgba(255,255,255,0.001)",
-                    lineColor: "transparent",
-                    lineWidth: 0,
-                  },
-                },
-                false,
-              );
-
-              this.series.chart.redraw(false);
-
               clearPointHighlight(this.series.chart);
               clearIssueLabelHighlight(this.series.chart);
             },
@@ -821,7 +741,7 @@ function addQuadrantLabels(chart) {
 }
 
 function addIssueLabels(chart, quadrantGroups, cellGroups) {
-  const quadrantOrder = ["Discovery", "Specify", "Navigate", "Manage"];
+  const quadrantOrder = ["Discovery", "Navigate", "Specify", "Manage"];
 
   const quadrantMap = {
     Q4: "Discovery",
@@ -978,7 +898,7 @@ function positionLabels(chart) {
   const quadrantLabels = grouped.quadrants ?? [];
 
   const RIGHT_X = chart.plotLeft + chart.plotWidth + 8;
-  const ISSUE_TEXT_X = RIGHT_X + 20;
+  const ISSUE_TEXT_X = RIGHT_X + 24; // fixed column for all issue text
 
   quadrantLabels.forEach(({ x, y, label }) => {
     label.attr({
@@ -1008,10 +928,8 @@ function positionLabels(chart) {
   let currentY = chart.plotTop + 10;
 
   const headerGap = 16;
-  // const itemGap = 10;
-  const itemGap = 11.5;
+  const itemGap = 10;
   const groupGap = 14;
-  // const letterGap = 6;
   const letterGap = 6;
 
   quadrantOrder.forEach((q) => {
@@ -1215,18 +1133,6 @@ function bindIssueLabelEvents(
 
       rectSeries.points.forEach((pt) => {
         if (pt.x === x && pt.y === y) {
-          const hoverStyle = getQuadrantHoverStyle(x, y);
-          pt.update(
-            {
-              marker: {
-                fillColor: hoverStyle.fillColor,
-                lineColor: hoverStyle.lineColor,
-                lineWidth: 3,
-              },
-            },
-            false,
-          );
-          pt.series.chart.redraw(false);
           pt.setState("hover");
         }
       });
@@ -1257,17 +1163,6 @@ function bindIssueLabelEvents(
 
       rectSeries.points.forEach((pt) => {
         if (pt.x === x && pt.y === y) {
-          pt.update(
-            {
-              marker: {
-                fillColor: "rgba(255,255,255,0.001)",
-                lineColor: "transparent",
-                lineWidth: 0,
-              },
-            },
-            false,
-          );
-          pt.series.chart.redraw(false);
           pt.setState("");
         }
       });
