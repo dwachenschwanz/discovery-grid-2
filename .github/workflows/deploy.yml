@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - lilly
+
   workflow_dispatch:
 
 permissions:
@@ -28,7 +29,6 @@ jobs:
             path_prefix: ""
           - branch: lilly
             path_prefix: "lilly"
-          
 
     steps:
       - name: Checkout target branch
