@@ -12,10 +12,10 @@ const HIGHLIGHT_RADIUS = 0.6;
 const DEBUG = false;
 
 const QUADRANT_COLORS = {
-  Discovery: "#d63384", // pink
-  Navigate: "#2f80ed", // blue
-  Specify: "#c9a400", // yellow/gold (darker for readability)
-  Manage: "#2ca58d", // green
+  Discovery: "#d63384",
+  Navigate: "#2f80ed",
+  Specify: "#c9a400",
+  Manage: "#2ca58d",
 };
 
 const log = (...args) => {
@@ -354,14 +354,13 @@ function buildBasePoints(data) {
 function init(basePoints) {
   const { cellGroups, quadrantGroups } = groupData(basePoints);
   const jitteredPoints = buildJitteredPoints(cellGroups);
-  const cellTooltips = buildCellTooltips(cellGroups);
+  const cellHoverPoints = buildCellHoverPoints(cellGroups);
 
   log("quadrantGroups", quadrantGroups);
-  log("cellTooltips", cellTooltips);
 
   renderChart({
     jitteredPoints,
-    cellTooltips,
+    cellHoverPoints,
     quadrantGroups,
     cellGroups,
   });
@@ -460,6 +459,14 @@ function buildJitteredPoints(cellGroups) {
   return jitteredPoints;
 }
 
+function buildCellHoverPoints(cellGroups) {
+  return Object.values(cellGroups).map((group) => ({
+    x: group.x,
+    y: group.y,
+    cellLetter: group.cellLetter,
+  }));
+}
+
 function placePoint(group, name, col, row, cols, rows) {
   const usableWidth = CELL_SIZE - 2 * CELL_PADDING;
   const usableHeight = CELL_SIZE - 2 * CELL_PADDING;
@@ -471,32 +478,9 @@ function placePoint(group, name, col, row, cols, rows) {
   };
 }
 
-function buildCellTooltips(cellGroups) {
-  return Object.values(cellGroups).map((group) => {
-    const itemsHtml = (group.items ?? [])
-      .map((item) => `<li>${escapeHtml(item.name)}</li>`)
-      .join("");
-
-    return {
-      x: group.x,
-      y: group.y,
-      cellLetter: group.cellLetter,
-      name: `
-        <div style="text-align: left; font-weight: bold; margin-bottom: 6px;">
-          ${escapeHtml(group.cellLetter)}
-        </div>
-        <div style="text-align: left; font-weight: bold; margin-top: 6px;">Issues:</div>
-        <ul style="padding-left: 10px; margin: 4px 0;">
-          ${itemsHtml}
-        </ul>
-      `,
-    };
-  });
-}
-
 function renderChart({
   jitteredPoints,
-  cellTooltips,
+  cellHoverPoints,
   quadrantGroups,
   cellGroups,
 }) {
@@ -514,7 +498,8 @@ function renderChart({
 
           addQuadrantLabels(chart);
           addIssueLabels(chart, quadrantGroups, cellGroups);
-          chart.labelsByRow = buildLabelsByRow(chart.customLabels);
+          chart.labelsByRow = buildLabelsByGroups(chart.customLabels);
+          chart.issueLabelsByCell = buildIssueLabelsByCell(chart.customLabels);
 
           enforceSquarePlot(chart);
           positionLabels(chart);
@@ -570,7 +555,6 @@ function renderChart({
         },
         x: -10,
         formatter: function () {
-          // return this.value === "5" ? "" : this.value;
           return this.value;
         },
       },
@@ -581,12 +565,7 @@ function renderChart({
       gridLineColor: "#888",
     },
     tooltip: {
-      shared: false,
-      useHTML: true,
-      formatter: function () {
-        if (this.series.name !== "Cells") return false;
-        return this.point.name;
-      },
+      enabled: false,
     },
     plotOptions: {
       series: {
@@ -619,7 +598,7 @@ function renderChart({
       {
         name: "Cells",
         type: "scatter",
-        data: cellTooltips,
+        data: cellHoverPoints,
         enableMouseTracking: true,
         marker: {
           enabled: true,
@@ -640,9 +619,11 @@ function renderChart({
           events: {
             mouseOver: function () {
               highlightPointsForCell(this.series.chart, this.x, this.y);
+              highlightIssueLabelsForCell(this.series.chart, this.x, this.y);
             },
             mouseOut: function () {
               clearPointHighlight(this.series.chart);
+              clearIssueLabelHighlight(this.series.chart);
             },
           },
         },
@@ -856,6 +837,7 @@ function addIssueLabels(chart, quadrantGroups, cellGroups) {
       const meta = {
         x: item.x,
         y: item.y,
+        cellKey: `${item.x}-${item.y}`,
         prefixLabel,
         label: issueLabel,
         isCellLabel: true,
@@ -881,12 +863,27 @@ function addIssueLabels(chart, quadrantGroups, cellGroups) {
   });
 }
 
-function buildLabelsByRow(labels) {
+function buildLabelsByGroups(labels) {
   return {
     headers: labels.filter((l) => l.isHeader),
     issues: labels.filter((l) => l.isCellLabel),
     quadrants: labels.filter((l) => !l.isHeader && !l.isCellLabel),
   };
+}
+
+function buildIssueLabelsByCell(labels) {
+  const byCell = {};
+
+  labels
+    .filter((item) => item.isCellLabel)
+    .forEach((item) => {
+      if (!byCell[item.cellKey]) {
+        byCell[item.cellKey] = [];
+      }
+      byCell[item.cellKey].push(item);
+    });
+
+  return byCell;
 }
 
 function positionLabels(chart) {
@@ -901,7 +898,7 @@ function positionLabels(chart) {
   const quadrantLabels = grouped.quadrants ?? [];
 
   const RIGHT_X = chart.plotLeft + chart.plotWidth + 8;
-  const ISSUE_TEXT_X = RIGHT_X + 22; // fixed start for issue text
+  const ISSUE_TEXT_X = RIGHT_X + 20;
 
   quadrantLabels.forEach(({ x, y, label }) => {
     label.attr({
@@ -933,6 +930,7 @@ function positionLabels(chart) {
   const headerGap = 16;
   const itemGap = 10;
   const groupGap = 14;
+  const letterGap = 6;
 
   quadrantOrder.forEach((q) => {
     const items = groupedIssues[q];
@@ -940,11 +938,6 @@ function positionLabels(chart) {
 
     const header = groupedHeaders[q];
     if (header) {
-      // header.label.attr({
-      //   x: RIGHT_X,
-      //   y: currentY,
-      //   align: "left",
-      // });
       header.label.attr({
         x: ISSUE_TEXT_X,
         y: currentY,
@@ -971,8 +964,10 @@ function positionLabels(chart) {
           align: "left",
         });
 
+        const prefixWidth = it.prefixLabel.getBBox().width;
+
         it.label.attr({
-          x: ISSUE_TEXT_X,
+          x: RIGHT_X + prefixWidth + 4,
           y: currentY,
           align: "left",
         });
@@ -980,12 +975,130 @@ function positionLabels(chart) {
         currentY += itemGap;
       });
 
-      currentY += 6;
+      currentY += letterGap;
     });
 
     currentY += groupGap;
   });
 }
+
+function setIssueLabelState(meta, state = "normal") {
+  const baseColor = QUADRANT_COLORS[meta.quadrant] || "#2c2c2c";
+
+  const styles = {
+    normal: {
+      color: baseColor,
+      fontWeight: "500",
+      opacity: 1,
+    },
+    highlight: {
+      color: baseColor,
+      fontWeight: "700",
+      opacity: 1,
+    },
+    dim: {
+      color: baseColor,
+      fontWeight: "400",
+      opacity: 0.25,
+    },
+  };
+
+  const style = styles[state] || styles.normal;
+
+  meta.prefixLabel?.css({
+    color: style.color,
+    fontSize: "11px",
+    fontWeight: style.fontWeight,
+    textDecoration: "none",
+  });
+  if (meta.prefixLabel?.element) {
+    meta.prefixLabel.element.style.opacity = String(style.opacity);
+  }
+
+  meta.label?.css({
+    color: style.color,
+    fontSize: "11px",
+    fontWeight: style.fontWeight,
+    textDecoration: "none",
+  });
+  if (meta.label?.element) {
+    meta.label.element.style.opacity = String(style.opacity);
+  }
+}
+
+function setQuadrantHeaderState(meta, state = "normal") {
+  const baseColor = QUADRANT_COLORS[meta.quadrant] || "#2c2c2c";
+
+  const styles = {
+    normal: {
+      color: baseColor,
+      fontWeight: "700",
+      opacity: 1,
+    },
+    highlight: {
+      color: baseColor,
+      fontWeight: "800",
+      opacity: 1,
+    },
+    dim: {
+      color: baseColor,
+      fontWeight: "600",
+      opacity: 0.25,
+    },
+  };
+
+  const style = styles[state] || styles.normal;
+
+  meta.label?.css({
+    color: style.color,
+    fontSize: "12px",
+    fontWeight: style.fontWeight,
+    textDecoration: "none",
+  });
+
+  if (meta.label?.element) {
+    meta.label.element.style.opacity = String(style.opacity);
+  }
+}
+
+function highlightIssueLabelsForCell(chart, cellX, cellY) {
+  const cellKey = `${cellX}-${cellY}`;
+  const allIssueLabels =
+    chart.customLabels?.filter((item) => item.isCellLabel) ?? [];
+  const allHeaders = chart.customLabels?.filter((item) => item.isHeader) ?? [];
+  const matching = chart.issueLabelsByCell?.[cellKey] ?? [];
+  const matchingKeys = new Set(
+    matching.map((m) => `${m.cellKey}::${m.issueName}`),
+  );
+  const activeQuadrants = new Set(matching.map((m) => m.quadrant));
+
+  allIssueLabels.forEach((meta) => {
+    const key = `${meta.cellKey}::${meta.issueName}`;
+    setIssueLabelState(meta, matchingKeys.has(key) ? "highlight" : "dim");
+  });
+
+  allHeaders.forEach((meta) => {
+    setQuadrantHeaderState(
+      meta,
+      activeQuadrants.has(meta.quadrant) ? "highlight" : "dim",
+    );
+  });
+}
+
+function clearIssueLabelHighlight(chart) {
+  const allIssueLabels =
+    chart.customLabels?.filter((item) => item.isCellLabel) ?? [];
+  const allHeaders = chart.customLabels?.filter((item) => item.isHeader) ?? [];
+
+  allIssueLabels.forEach((meta) => {
+    setIssueLabelState(meta, "normal");
+  });
+
+  allHeaders.forEach((meta) => {
+    setQuadrantHeaderState(meta, "normal");
+  });
+}
+
 function bindIssueLabelEvents(
   chart,
   prefixLabel,
@@ -1000,45 +1113,25 @@ function bindIssueLabelEvents(
 
   const rectSeries = chart.series[1];
   const stickyBody = stickyNote?.querySelector(".stickyNoteBody");
-  const baseColor = QUADRANT_COLORS[quadrant] || "#2c2c2c";
 
-  const applyBaseStyle = () => {
-    prefixLabel.css({
-      color: baseColor,
-      fontSize: "11px",
-      fontWeight: "500",
-      textDecoration: "none",
-    });
-
-    issueLabel.css({
-      color: baseColor,
-      fontSize: "11px",
-      fontWeight: "500",
-      textDecoration: "none",
-    });
+  const meta = {
+    x,
+    y,
+    cellKey: `${x}-${y}`,
+    prefixLabel,
+    label: issueLabel,
+    quadrant,
+    issueName,
+    description,
   };
 
-  const applyHoverStyle = () => {
-    prefixLabel.css({
-      color: baseColor,
-      fontSize: "11px",
-      fontWeight: "700",
-    });
-
-    issueLabel.css({
-      color: baseColor,
-      fontSize: "11px",
-      fontWeight: "700",
-    });
-  };
-
-  applyBaseStyle();
+  setIssueLabelState(meta, "normal");
 
   [prefixLabel.element, issueLabel.element].forEach((el) => {
     el.style.cursor = "help";
 
     el.addEventListener("mouseenter", () => {
-      applyHoverStyle();
+      setIssueLabelState(meta, "highlight");
 
       rectSeries.points.forEach((pt) => {
         if (pt.x === x && pt.y === y) {
@@ -1068,7 +1161,7 @@ function bindIssueLabelEvents(
     });
 
     el.addEventListener("mouseleave", () => {
-      applyBaseStyle();
+      setIssueLabelState(meta, "normal");
 
       rectSeries.points.forEach((pt) => {
         if (pt.x === x && pt.y === y) {
@@ -1097,15 +1190,6 @@ function highlightPointsForCell(chart, cellX, cellY) {
 function clearPointHighlight(chart) {
   const mainSeries = chart.series[0];
   mainSeries.points.forEach((pt) => pt.setState(""));
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 function enforceSquarePlot(chart) {
