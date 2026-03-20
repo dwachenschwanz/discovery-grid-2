@@ -1,3 +1,29 @@
+/**
+ * StickyNote web component.
+ *
+ * A Shadow DOM custom element that renders a sticky-note style UI with
+ * title/body content, readonly and editable modes, configurable truncation,
+ * and custom event hooks for host applications.
+ *
+ * Attributes:
+ * - title
+ * - text
+ * - color
+ * - variant
+ * - readonly
+ * - disabled
+ * - max-title-length
+ * - max-lines
+ * - tooltip-position
+ *
+ * Events:
+ * - title-overlay-click
+ * - edit-start
+ * - title-input
+ * - note-input
+ * - note-change
+ * - edit-cancel
+ */
 
 class StickyNote extends HTMLElement {
   static get observedAttributes() {
@@ -149,6 +175,12 @@ class StickyNote extends HTMLElement {
     });
   }
 
+  /**
+ * Returns the current draft values from the live input fields if available.
+ * Falls back to attribute values when the shadow inputs are not present.
+ *
+ * @returns {{title: string, text: string, color: string, variant: string}}
+ */
   getDraftValue() {
     const title = this.shadowRoot.querySelector('.note-title');
     const text = this.shadowRoot.querySelector('.note-text');
@@ -160,6 +192,13 @@ class StickyNote extends HTMLElement {
     };
   }
 
+/**
+ * Synchronizes the DOM with the current component mode.
+ * Applies readonly/editing state, class names, button visibility,
+ * disabled flags, and tab order.
+ *
+ * @returns {void}
+ */
   syncMode() {
     const root = this.shadowRoot;
     const note = root.querySelector('.sticky-note');
@@ -190,6 +229,11 @@ class StickyNote extends HTMLElement {
     if (cancelBtn) cancelBtn.hidden = !editing;
   }
 
+/**
+ * Enters edit mode unless the component is readonly or disabled.
+ *
+ * @returns {void}
+ */
   enterEditMode() {
     if (this.readOnly || this.disabled) return;
     this._editing = true;
@@ -203,6 +247,12 @@ class StickyNote extends HTMLElement {
     this.dispatchStickyEvent('edit-start', this.getDraftValue());
   }
 
+/**
+ * Commits the current draft values back to component attributes
+ * and emits a `note-change` event.
+ *
+ * @returns {void}
+ */
   commitChanges() {
     if (!this._editing) return;
     const draft = this.getDraftValue();
@@ -213,6 +263,12 @@ class StickyNote extends HTMLElement {
     this.dispatchStickyEvent('note-change', draft);
   }
 
+/**
+ * Cancels editing, restores rendered values from attributes,
+ * and emits an `edit-cancel` event.
+ *
+ * @returns {void}
+ */
   cancelChanges() {
     if (!this._editing) return;
     this._editing = false;
@@ -237,7 +293,14 @@ class StickyNote extends HTMLElement {
     text.style.height = 'auto';
     text.style.height = text.scrollHeight + 'px';
   }
-
+  
+/**
+ * Dispatches a bubbling, composed CustomEvent from the host element.
+ *
+ * @param {string} name
+ * @param {any} [detail=null]
+ * @returns {void}
+ */
   dispatchStickyEvent(name, detail = null) {
     this.dispatchEvent(new CustomEvent(name, {
       bubbles: true,
