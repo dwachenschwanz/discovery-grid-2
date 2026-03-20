@@ -22,8 +22,9 @@ const log = (...args) => {
   if (DEBUG) console.log(...args);
 };
 
-const stickyNote = document.querySelector(".stickyNote");
-const stickyTitle = stickyNote?.querySelector(".stickyNoteTitle");
+// const stickyNote = document.querySelector(".stickyNote");
+// const stickyTitle = stickyNote?.querySelector(".stickyNoteTitle");
+const stickyNote = document.querySelector("#hoverStickyNote");
 
 const LAYOUTS = {
   1: { cols: 1, rows: 1, positions: [{ col: 0, row: 0, center: true }] },
@@ -1176,6 +1177,8 @@ function clearIssueLabelHighlight(chart) {
   });
 }
 
+// const stickyNote = document.querySelector("#hoverStickyNote");
+
 function bindIssueLabelEvents(
   chart,
   prefixLabel,
@@ -1189,7 +1192,6 @@ function bindIssueLabelEvents(
   if (issueLabel.clickBound) return;
 
   const rectSeries = chart.series[1];
-  const stickyBody = stickyNote?.querySelector(".stickyNoteBody");
 
   const meta = {
     x,
@@ -1231,20 +1233,17 @@ function bindIssueLabelEvents(
       const labelRect = issueLabel.element.getBoundingClientRect();
       const parentRect =
         issueLabel.element.parentElement?.getBoundingClientRect();
+
       if (!parentRect || !stickyNote) return;
 
       const verticalOffset = labelRect.top - parentRect.top;
 
-      if (stickyTitle) {
-        stickyTitle.textContent = issueName;
-      }
-
-      if (stickyBody) {
-        stickyBody.textContent = description || "";
-      }
-
+      stickyNote.setAttribute("title", issueName || "");
+      stickyNote.setAttribute("text", description || "");
       stickyNote.style.left = "100%";
-      stickyNote.style.transform = "translateX(10px)";
+      stickyNote.style.transform = "translateY(-50%) translateX(10px)";
+      // stickyNote.style.left = "calc(100% - 170px)";
+      // stickyNote.style.transform = "translateY(-50%)";
       stickyNote.style.top = `${verticalOffset}px`;
       stickyNote.classList.add("show");
     });

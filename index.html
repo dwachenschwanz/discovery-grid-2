@@ -15,23 +15,21 @@
   </head>
   <body>
     <div class="square-container">
-      <div class="stickyNote">
-        <div class="stickyNoteTitle"></div>
-        <div class="stickyNoteBody"></div>
-      </div>
+      <sticky-note
+        id="hoverStickyNote"
+        class="stickyNote"
+        variant="default"
+        title=""
+        text=""
+        color="rgb(167, 177, 240)"
+        max-title-length="20"
+        max-lines="5"
+        readonly
+      ></sticky-note>
+
       <div id="container" class="square-chart"></div>
     </div>
 
-    <!-- <div class="square-container">
-      <div class="stickyNote">
-        <div class="stickyNoteTitle"></div>
-        <div class="stickyNoteBody"></div>
-      </div>
-
-      <div id="container" class="square-chart"></div>
-      <div id="label-layer" class="label-layer"></div>
-    </div> -->
     <script type="module" src="/src/main.js"></script>
-    <!-- <script type="module" src="/src/new_main.js"></script> -->
   </body>
 </html>

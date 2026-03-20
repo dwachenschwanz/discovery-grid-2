@@ -12,11 +12,9 @@
 
   --separator-background-color: #efefef;
 
-  font-family: s "Noto Sans", sans-serif;
+  font-family: "Noto Sans", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  /* color-scheme: light dark; */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -28,104 +26,53 @@
 *::before,
 *::after {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
 }
 
 body {
   font-family: var(--global-font-family);
   font-size: var(--global-font-size);
-  margin: 0;
-  padding: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  background-color: var(--app-background-color);
+  background: #ffffff;
   color: var(--app-color);
-}
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #ffffff;
   overflow: auto;
 }
 
 .square-container {
-  width: 200vmin; /* vmin ensures it's responsive to viewport */
+  width: 200vmin;
   height: 200vmin;
   max-width: 800px;
   max-height: 800px;
   position: relative;
+  overflow: visible;
 }
 
 .stickyNote {
   visibility: hidden;
   position: absolute;
-  /* left: 100%; Align to the right edge of .square-container */
-  /* top: 30%;
-  right: -10px; */
-  /* transform: translatex(-100%); */ */
-  /*transform:translateY(-50%)translateX(10px)Centervertically,moverightby10px*/
   left: 100%;
+  top: 0;
   transform: translateY(-50%) translateX(10px);
-  width: 150px;
-  height: 150px;
-  padding: 12px;
-  background-color: #ffeb3b;
-  border: 1px solid #ccc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 190px;
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   font-size: var(--global-font-size);
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-.stickyNote-title {
-  font-weight: normal;
-  margin-bottom: 8px;
-  font-size: 1em;
-  text-align: center; /* ✅ Centers the title text */
-}
-
-.stickyNote-description {
-  font-size: 0.9em;
-  line-height: 1.2;
-  flex-grow: 1;
-}
-
-.stickyNoteTitle {
-  font-weight: 700;          /* make it bold */
-  margin-bottom: 6px;
-  font-size: 0.95em;         /* slightly prominent */
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.stickyNoteBody {
-  overflow: hidden;
-  position: relative;
-  font-size: 0.78em;
-  line-height: 1.2;
-  color: #333;
-  max-height: calc(1.2em * 6);
-}
-
-.stickyNoteBody::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 20px;
-  background: linear-gradient(to bottom, rgba(255,235,59,0), #ffeb3b);
+  z-index: 1000;
+  display: block;
 }
 
 .stickyNote.show {
@@ -145,7 +92,6 @@ body {
   padding: 12px;
   border: 1px solid #ccc;
   background: #f9f9f9;
-  /* border-radius: 8px; */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -156,16 +102,3 @@ body {
   color: #000;
   pointer-events: none;
 }
-
-
-/* .label-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 20;
-}
-
-.label-layer sticky-note-card {
-  position: absolute;
-  pointer-events: auto;
-} */
