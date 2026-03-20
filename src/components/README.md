@@ -23,6 +23,7 @@ Include the script:
 
 ```html
 <script src="./StickyNoteCard.js"></script>
+```
 
 ## Basic Usage
 
