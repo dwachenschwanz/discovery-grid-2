@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - lilly
+
   workflow_dispatch:
 
 permissions:
@@ -15,6 +16,9 @@ permissions:
 concurrency:
   group: pages
   cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -28,18 +32,17 @@ jobs:
             path_prefix: ""
           - branch: lilly
             path_prefix: "lilly"
-          
 
     steps:
       - name: Checkout target branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ matrix.branch }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -69,7 +72,7 @@ jobs:
           fi
 
       - name: Upload partial artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pages-${{ matrix.branch }}
           path: /tmp/pages-output
