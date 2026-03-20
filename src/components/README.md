@@ -23,3 +23,27 @@ Include the script:
 
 ```html
 <script src="./StickyNoteCard.js"></script>
+
+## Basic Usage
+
+```html
+<sticky-note
+  title="Quick Note"
+  text="This is a sticky note."
+></sticky-note>
+```
+
+
+## Attributes
+
+| Attribute          | Type    | Default              | Description                     |
+| ------------------ | ------- | -------------------- | ------------------------------- |
+| `title`            | string  | `""`                 | Title text displayed at the top |
+| `text`             | string  | `""`                 | Body text content               |
+| `color`            | string  | `rgb(167, 177, 240)` | Background color                |
+| `variant`          | string  | `default`            | CSS class hook for styling      |
+| `readonly`         | boolean | false                | Disables editing UI             |
+| `disabled`         | boolean | false                | Prevents all interaction        |
+| `max-title-length` | number  | 20                   | Maximum title characters        |
+| `max-lines`        | number  | 5                    | Max visible lines (truncation)  |
+| `tooltip-position` | string  | `bottom`             | Metadata for positioning        |
