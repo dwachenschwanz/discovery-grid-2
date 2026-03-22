@@ -25,7 +25,7 @@
  * - edit-cancel
  */
 
-class StickyNote extends HTMLElement {
+export class StickyNote extends HTMLElement {
   static get observedAttributes() {
     return [
       'title',
@@ -36,7 +36,8 @@ class StickyNote extends HTMLElement {
       'disabled',
       'max-title-length',
       'max-lines',
-      'tooltip-position'
+      'tooltip-position',
+      'expanded'
     ];
   }
 
@@ -45,21 +46,56 @@ class StickyNote extends HTMLElement {
     this.attachShadow({ mode: 'open' });
     this._bound = false;
     this._editing = false;
+    this._rendered = false;
+    this._refs = null;
   }
 
   connectedCallback() {
-    this.render();
+    if (!this._rendered) {
+      this.render();
+      this.cacheElements();
+      this._rendered = true;
+    }
+
+    this.refreshUI();
     this.bindEvents();
-    this.syncMode();
-    this.autoResize();
   }
 
-  attributeChangedCallback() {
-    if (!this.shadowRoot) return;
-    this.render();
-    this.bindEvents();
-    this.syncMode();
-    this.autoResize();
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (!this.shadowRoot || !this._rendered || oldValue === newValue) return;
+
+    switch (name) {
+      case 'title':
+        this.updateTitle();
+        break;
+      case 'text':
+        this.updateText();
+        break;
+      case 'color':
+        this.updateTheme();
+        break;
+      case 'variant':
+        this.updateVariant();
+        break;
+      case 'max-title-length':
+        this.updateTitleConstraints();
+        break;
+      case 'max-lines':
+        this.updateTextConstraints();
+        this.autoResize();
+        break;
+      case 'tooltip-position':
+      case 'readonly':
+      case 'disabled':
+        this.syncMode();
+        break;
+      case 'expanded':
+        this.updateExpansion();
+        this.autoResize();
+        break;
+      default:
+        break;
+    }
   }
 
   get titleValue() {
@@ -107,6 +143,10 @@ class StickyNote extends HTMLElement {
     return this.getAttribute('tooltip-position') || 'bottom';
   }
 
+  get expanded() {
+    return this.hasAttribute('expanded');
+  }
+
   bindEvents() {
     if (this._bound) return;
     this._bound = true;
@@ -148,8 +188,7 @@ class StickyNote extends HTMLElement {
     });
 
     this.shadowRoot.addEventListener('keydown', (event) => {
-      const titleInput = this.shadowRoot.querySelector('.note-title');
-      const textInput = this.shadowRoot.querySelector('.note-text');
+      const { titleInput, textInput } = this._refs ?? {};
 
       if (event.key === 'Escape' && this._editing) {
         event.preventDefault();
@@ -182,11 +221,10 @@ class StickyNote extends HTMLElement {
  * @returns {{title: string, text: string, color: string, variant: string}}
  */
   getDraftValue() {
-    const title = this.shadowRoot.querySelector('.note-title');
-    const text = this.shadowRoot.querySelector('.note-text');
+    const { titleInput, textInput } = this._refs ?? {};
     return {
-      title: title ? title.value : this.titleValue,
-      text: text ? text.value : this.textValue,
+      title: titleInput ? titleInput.value : this.titleValue,
+      text: textInput ? textInput.value : this.textValue,
       color: this.color,
       variant: this.variant
     };
@@ -200,29 +238,33 @@ class StickyNote extends HTMLElement {
  * @returns {void}
  */
   syncMode() {
-    const root = this.shadowRoot;
-    const note = root.querySelector('.sticky-note');
-    const title = root.querySelector('.note-title');
-    const text = root.querySelector('.note-text');
-    const editBtn = root.querySelector('[data-action="edit"]');
-    const saveBtn = root.querySelector('[data-action="save"]');
-    const cancelBtn = root.querySelector('[data-action="cancel"]');
+    const {
+      note,
+      titleInput,
+      textInput,
+      editBtn,
+      saveBtn,
+      cancelBtn,
+    } = this._refs ?? {};
 
-    if (!note || !title || !text) return;
+    if (!note || !titleInput || !textInput) return;
 
     const viewOnly = this.readOnly || this.disabled;
     const editing = this._editing && !viewOnly;
 
     note.classList.toggle('is-editing', editing);
     note.classList.toggle('is-readonly', viewOnly);
+    note.className = `sticky-note ${this.variant}`.trim();
+    note.classList.toggle('is-editing', editing);
+    note.classList.toggle('is-readonly', viewOnly);
     note.setAttribute('data-tooltip-position', this.tooltipPosition);
 
-    title.readOnly = !editing;
-    text.readOnly = !editing;
-    title.disabled = !editing;
-    text.disabled = !editing;
-    title.tabIndex = editing ? 0 : -1;
-    text.tabIndex = editing ? 0 : -1;
+    titleInput.readOnly = !editing;
+    textInput.readOnly = !editing;
+    titleInput.disabled = !editing;
+    textInput.disabled = !editing;
+    titleInput.tabIndex = editing ? 0 : -1;
+    textInput.tabIndex = editing ? 0 : -1;
 
     if (editBtn) editBtn.hidden = viewOnly || editing;
     if (saveBtn) saveBtn.hidden = !editing;
@@ -239,10 +281,10 @@ class StickyNote extends HTMLElement {
     this._editing = true;
     this.syncMode();
     this.autoResize();
-    const title = this.shadowRoot.querySelector('.note-title');
-    if (title) {
-      title.focus();
-      title.setSelectionRange(title.value.length, title.value.length);
+    const { titleInput } = this._refs ?? {};
+    if (titleInput) {
+      titleInput.focus();
+      titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
     }
     this.dispatchStickyEvent('edit-start', this.getDraftValue());
   }
@@ -272,9 +314,7 @@ class StickyNote extends HTMLElement {
   cancelChanges() {
     if (!this._editing) return;
     this._editing = false;
-    this.render();
-    this.syncMode();
-    this.autoResize();
+    this.refreshUI();
     this.dispatchStickyEvent('edit-cancel', {
       title: this.titleValue,
       text: this.textValue,
@@ -284,8 +324,13 @@ class StickyNote extends HTMLElement {
   }
 
   autoResize() {
-    const text = this.shadowRoot.querySelector('.note-text');
+    const text = this._refs?.textInput;
     if (!text) return;
+    if (this.expanded) {
+      text.style.height = 'auto';
+      text.style.height = `${text.scrollHeight}px`;
+      return;
+    }
     if (!this._editing) {
       text.style.height = 'auto';
       return;
@@ -325,17 +370,12 @@ class StickyNote extends HTMLElement {
   }
 
   render() {
-    const title = this.escapeAttr(this.titleValue);
-    const text = this.escapeText(this.textValue);
-    const maxTitleLength = this.maxTitleLength;
-    const maxLines = this.maxLines;
-
     this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: inline-block;
           vertical-align: top;
-          --sticky-note-bg: ${this.color};
+          --sticky-note-bg: rgb(167, 177, 240);
           --sticky-note-color: #1f2430;
           --sticky-note-width: 190px;
           --sticky-note-min-height: 134px;
@@ -423,7 +463,7 @@ class StickyNote extends HTMLElement {
 
         .note-text {
           display: block;
-          min-height: calc(1em * ${maxLines} * 1.35);
+          min-height: calc(1em * var(--max-lines, 5) * 1.35);
           height: auto;
           overflow: hidden;
           font-size: var(--sticky-note-body-size);
@@ -431,7 +471,6 @@ class StickyNote extends HTMLElement {
           white-space: pre-wrap;
           word-break: break-word;
           overflow-wrap: anywhere;
-          --max-lines: ${maxLines};
         }
 
         .truncate {
@@ -513,6 +552,14 @@ class StickyNote extends HTMLElement {
           -webkit-line-clamp: initial;
           line-clamp: initial;
         }
+
+        :host([expanded]) .note-text {
+          min-height: 0;
+          overflow: hidden;
+          display: block;
+          -webkit-line-clamp: initial;
+          line-clamp: initial;
+        }
       </style>
 
       <div class="sticky-note ${this.variant}" part="container" data-tooltip-position="${this.escapeAttr(this.tooltipPosition)}">
@@ -526,8 +573,8 @@ class StickyNote extends HTMLElement {
               disabled
               placeholder=""
               tabindex="-1"
-              maxlength="${maxTitleLength}"
-              value="${title}"
+              maxlength="20"
+              value=""
             />
             <div class="title-click-overlay" part="title-overlay"></div>
           </div>
@@ -540,8 +587,8 @@ class StickyNote extends HTMLElement {
               readonly
               disabled
               tabindex="-1"
-              style="background: transparent; --max-lines: ${maxLines}; height: auto;"
-            >${text}</textarea>
+              style="background: transparent; height: auto;"
+            ></textarea>
           </div>
           <div class="note-actions" part="actions">
             <button class="note-btn" part="edit-button" data-action="edit" type="button">Edit</button>
@@ -552,8 +599,82 @@ class StickyNote extends HTMLElement {
       </div>
     `;
   }
+
+  cacheElements() {
+    this._refs = {
+      note: this.shadowRoot.querySelector('.sticky-note'),
+      titleInput: this.shadowRoot.querySelector('.note-title'),
+      textInput: this.shadowRoot.querySelector('.note-text'),
+      editBtn: this.shadowRoot.querySelector('[data-action="edit"]'),
+      saveBtn: this.shadowRoot.querySelector('[data-action="save"]'),
+      cancelBtn: this.shadowRoot.querySelector('[data-action="cancel"]'),
+    };
+  }
+
+  refreshUI() {
+    this.updateTheme();
+    this.updateVariant();
+    this.updateTitleConstraints();
+    this.updateTextConstraints();
+    this.updateTitle();
+    this.updateText();
+    this.updateExpansion();
+    this.syncMode();
+    this.autoResize();
+  }
+
+  updateTheme() {
+    this.style.setProperty('--sticky-note-bg', this.color);
+  }
+
+  updateVariant() {
+    const note = this._refs?.note;
+    if (!note) return;
+
+    note.className = `sticky-note ${this.variant}`.trim();
+  }
+
+  updateTitleConstraints() {
+    const titleInput = this._refs?.titleInput;
+    if (!titleInput) return;
+    titleInput.maxLength = this.maxTitleLength;
+  }
+
+  updateTextConstraints() {
+    const textInput = this._refs?.textInput;
+    if (!textInput) return;
+    textInput.style.setProperty('--max-lines', String(this.maxLines));
+  }
+
+  updateTitle() {
+    const titleInput = this._refs?.titleInput;
+    if (!titleInput) return;
+    const nextValue = this.titleValue;
+    if (titleInput.value !== nextValue) {
+      titleInput.value = nextValue;
+    }
+  }
+
+  updateText() {
+    const textInput = this._refs?.textInput;
+    if (!textInput) return;
+    const nextValue = this.textValue;
+    if (textInput.value !== nextValue) {
+      textInput.value = nextValue;
+    }
+  }
+
+  updateExpansion() {
+    const textInput = this._refs?.textInput;
+    if (!textInput) return;
+
+    textInput.classList.toggle('truncate', !this.expanded);
+  }
 }
 
-if (!customElements.get('sticky-note')) {
+if (
+  typeof customElements !== 'undefined' &&
+  !customElements.get('sticky-note')
+) {
   customElements.define('sticky-note', StickyNote);
 }

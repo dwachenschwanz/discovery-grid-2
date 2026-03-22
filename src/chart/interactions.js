@@ -277,6 +277,16 @@ function initializeIssueLabelInteractions(chart) {
     showStickyNoteForIssue(meta);
   });
 
+  chart.container.addEventListener("dblclick", (event) => {
+    const issueKey = getIssueKeyFromEventTarget(event.target);
+    if (!issueKey) return;
+
+    const meta = chart.issueLabelMetaByKey?.[issueKey];
+    if (!meta) return;
+
+    toggleStickyNoteExpansion(meta.chart?.stickyNoteElement ?? null);
+  });
+
   chart.container.addEventListener("mouseout", (event) => {
     const issueKey = getIssueKeyFromEventTarget(event.target);
     if (!issueKey) return;
@@ -292,6 +302,7 @@ function initializeIssueLabelInteractions(chart) {
     }
 
     deactivateCellHover(chart, meta.cellKey, "label");
+    resetStickyNoteExpansion(chart.stickyNoteElement);
     chart.stickyNoteElement?.classList.remove("show");
   });
 }
@@ -307,6 +318,8 @@ function showStickyNoteForIssue(meta) {
   const stickyNoteElement = meta.chart?.stickyNoteElement ?? null;
   if (!stickyNoteElement || !meta.label?.element) return;
 
+  resetStickyNoteExpansion(stickyNoteElement);
+
   const labelRect = meta.label.element.getBoundingClientRect();
   const parentRect = meta.label.element.parentElement?.getBoundingClientRect();
 
@@ -320,6 +333,26 @@ function showStickyNoteForIssue(meta) {
   stickyNoteElement.style.transform = "translateY(-50%) translateX(10px)";
   stickyNoteElement.style.top = `${verticalOffset}px`;
   stickyNoteElement.classList.add("show");
+}
+
+function toggleStickyNoteExpansion(stickyNoteElement) {
+  if (!stickyNoteElement) return;
+
+  const expanded = stickyNoteElement.dataset.expanded === "true";
+  if (expanded) {
+    resetStickyNoteExpansion(stickyNoteElement);
+    return;
+  }
+
+  stickyNoteElement.dataset.expanded = "true";
+  stickyNoteElement.setAttribute("expanded", "");
+}
+
+function resetStickyNoteExpansion(stickyNoteElement) {
+  if (!stickyNoteElement) return;
+
+  stickyNoteElement.dataset.expanded = "false";
+  stickyNoteElement.removeAttribute("expanded");
 }
 
 function highlightPointsForCell(chart, cellX, cellY) {
@@ -363,6 +396,7 @@ function setCellPointActive(point, active) {
       }
     : DEFAULT_CELL_MARKER_STYLE;
 
+  // Keep the cell square on explicit marker styling only. Using Highcharts'
+  // hover state here causes the square to clear as the pointer leaves the grid.
   applyCellMarkerStyle(point, markerStyle);
-  point.setState(active ? "hover" : "");
 }
