@@ -4,7 +4,10 @@ import {
 } from "./constants.js";
 import { getQuadrantHoverStyle } from "./data.js";
 
-const stickyNote = document.querySelector("#hoverStickyNote");
+const stickyNote =
+  typeof document !== "undefined"
+    ? document.querySelector("#hoverStickyNote")
+    : null;
 
 export function initializeChartInteractions(chart) {
   chart.cellPointsByKey = buildSeriesPointsByCellKey(chart.series[1].points);
@@ -13,6 +16,10 @@ export function initializeChartInteractions(chart) {
   chart.activeCellKey = null;
   chart.activeHighlightedCellKey = null;
   chart.activeIssueLabelKey = null;
+  chart.hoverSources = {
+    grid: null,
+    label: null,
+  };
 
   initializeIssueLabelInteractions(chart);
 }
@@ -32,7 +39,11 @@ export function buildIssueLabelsByCell(labels) {
   return byCell;
 }
 
-export function activateCellHover(chart, cellKey) {
+export function activateCellHover(chart, cellKey, source = "grid") {
+  if (chart.hoverSources) {
+    chart.hoverSources[source] = cellKey;
+  }
+
   if (chart.activeCellKey === cellKey) return;
 
   if (chart.activeCellKey) {
@@ -52,7 +63,18 @@ export function activateCellHover(chart, cellKey) {
   chart.activeCellKey = cellKey;
 }
 
-export function deactivateCellHover(chart, cellKey) {
+export function deactivateCellHover(chart, cellKey, source = "grid") {
+  if (chart.hoverSources?.[source] === cellKey) {
+    chart.hoverSources[source] = null;
+  }
+
+  const nextCellKey = chart.hoverSources?.label ?? chart.hoverSources?.grid ?? null;
+  if (nextCellKey && nextCellKey !== cellKey) {
+    activateCellHover(chart, nextCellKey, source);
+    return;
+  }
+
+  if (nextCellKey === cellKey) return;
   if (chart.activeCellKey !== cellKey) return;
 
   clearPointHighlight(chart);
@@ -254,7 +276,7 @@ function initializeIssueLabelInteractions(chart) {
     if (!meta) return;
 
     chart.activeIssueLabelKey = issueKey;
-    activateCellHover(chart, meta.cellKey);
+    activateCellHover(chart, meta.cellKey, "label");
     setIssueLabelState(meta, "highlight");
     showStickyNoteForIssue(meta);
   });
@@ -273,7 +295,7 @@ function initializeIssueLabelInteractions(chart) {
       chart.activeIssueLabelKey = null;
     }
 
-    deactivateCellHover(chart, meta.cellKey);
+    deactivateCellHover(chart, meta.cellKey, "label");
     stickyNote?.classList.remove("show");
   });
 }
@@ -344,6 +366,7 @@ function setCellPointActive(point, active) {
       }
     : DEFAULT_CELL_MARKER_STYLE;
 
+  // Keep the cell square on explicit marker styling only. Using Highcharts'
+  // hover state here causes the square to clear as the pointer leaves the grid.
   applyCellMarkerStyle(point, markerStyle);
-  point.setState(active ? "hover" : "");
 }
