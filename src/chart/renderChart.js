@@ -10,12 +10,15 @@ import {
 import { initializeChartLabels, positionLabels } from "./labels.js";
 
 export function renderChart({
+  chartElement,
   jitteredPoints,
   cellHoverPoints,
   quadrantGroups,
   cellGroups,
+  stickyNoteElement,
+  title = "Discovery Grid",
 }) {
-  Highcharts.chart("container", {
+  return Highcharts.chart(chartElement, {
     chart: {
       type: "scatter",
       marginRight: 220,
@@ -27,7 +30,7 @@ export function renderChart({
           const chart = this;
           initializeChartLabels(chart, quadrantGroups, cellGroups);
           chart.issueLabelsByCell = buildIssueLabelsByCell(chart.customLabels);
-          initializeChartInteractions(chart);
+          initializeChartInteractions(chart, { stickyNoteElement });
 
           enforceSquarePlot(chart);
           positionLabels(chart);
@@ -42,7 +45,7 @@ export function renderChart({
       enabled: false,
     },
     title: {
-      text: "Discovery Grid",
+      text: title,
     },
     xAxis: {
       title: {

@@ -181,6 +181,7 @@ function addIssueLabels(chart, quadrantGroups, cellGroups) {
         x: item.x,
         y: item.y,
         cellKey: `${item.x}-${item.y}`,
+        chart,
         label: issueLabel,
         isCellLabel: true,
         quadrant: quadrantName,

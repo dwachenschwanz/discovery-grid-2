@@ -1,64 +1,32 @@
-:root {
-  --global-font-size: 14px;
-  --global-font-family: "Noto Sans", Times, serif, "Lucida Grande", sans-serif,
-    Arial, sans-serif;
+.discovery-grid-widget-host {
+  --discovery-grid-font-size: 14px;
+  --discovery-grid-font-family: "Noto Sans", Times, serif, "Lucida Grande",
+    sans-serif, Arial, sans-serif;
+  --discovery-grid-color: #212529;
 
-  --app-background-color: #f8fafb;
-  --app-sidebar-color: #274c5b;
-  --app-color: #212529;
-  --app-menu-color: #ebf0f6;
-
-  --app-sidebar-width: 78.0778px;
-
-  --separator-background-color: #efefef;
-
-  font-family: "Noto Sans", sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html,
-body {
-  width: 100%;
-  min-height: 100%;
-}
-
-body {
-  font-family: var(--global-font-family);
-  font-size: var(--global-font-size);
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: #ffffff;
-  color: var(--app-color);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: auto;
-}
-
-.square-container {
-  width: 200vmin;
-  height: 200vmin;
-  max-width: 800px;
-  max-height: 800px;
+  font-family: var(--discovery-grid-font-family);
+  font-size: var(--discovery-grid-font-size);
+  color: var(--discovery-grid-color);
   position: relative;
   overflow: visible;
 }
 
-.stickyNote {
+.discovery-grid-widget-host *,
+.discovery-grid-widget-host *::before,
+.discovery-grid-widget-host *::after {
+  box-sizing: border-box;
+}
+
+.discovery-grid-widget {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  overflow: visible;
+}
+
+.discovery-grid-widget .stickyNote {
   visibility: hidden;
   position: absolute;
   left: 100%;
@@ -70,35 +38,16 @@ body {
   background: transparent;
   border: 0;
   box-shadow: none;
-  font-size: var(--global-font-size);
+  font-size: var(--discovery-grid-font-size);
   z-index: 1000;
   display: block;
 }
 
-.stickyNote.show {
+.discovery-grid-widget .stickyNote.show {
   visibility: visible;
 }
 
-.square-chart {
+.discovery-grid-widget .square-chart {
   width: 100%;
   height: 100%;
-}
-
-.hover-box {
-  position: absolute;
-  left: 100%;
-  top: 10%;
-  min-width: 250px;
-  padding: 12px;
-  border: 1px solid #ccc;
-  background: #f9f9f9;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.overlay-label {
-  position: absolute;
-  font-size: 12px;
-  font-weight: bold;
-  color: #000;
-  pointer-events: none;
 }

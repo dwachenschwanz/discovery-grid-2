@@ -4,15 +4,14 @@ import {
 } from "./constants.js";
 import { getQuadrantHoverStyle } from "./data.js";
 
-const stickyNote = document.querySelector("#hoverStickyNote");
-
-export function initializeChartInteractions(chart) {
+export function initializeChartInteractions(chart, options = {}) {
   chart.cellPointsByKey = buildSeriesPointsByCellKey(chart.series[1].points);
   chart.jitteredPointsByCell = buildSeriesPointsByCellKey(chart.series[0].points);
   chart.issueLabelMetaByKey = buildIssueLabelMetaByKey(chart.customLabels);
   chart.activeCellKey = null;
   chart.activeHighlightedCellKey = null;
   chart.activeIssueLabelKey = null;
+  chart.stickyNoteElement = options.stickyNoteElement ?? null;
 
   initializeIssueLabelInteractions(chart);
 }
@@ -274,7 +273,7 @@ function initializeIssueLabelInteractions(chart) {
     }
 
     deactivateCellHover(chart, meta.cellKey);
-    stickyNote?.classList.remove("show");
+    chart.stickyNoteElement?.classList.remove("show");
   });
 }
 
@@ -286,7 +285,8 @@ function getIssueKeyFromEventTarget(target) {
 }
 
 function showStickyNoteForIssue(meta) {
-  if (!stickyNote || !meta.label?.element) return;
+  const stickyNoteElement = meta.chart?.stickyNoteElement ?? null;
+  if (!stickyNoteElement || !meta.label?.element) return;
 
   const labelRect = meta.label.element.getBoundingClientRect();
   const parentRect = meta.label.element.parentElement?.getBoundingClientRect();
@@ -295,12 +295,12 @@ function showStickyNoteForIssue(meta) {
 
   const verticalOffset = labelRect.top - parentRect.top;
 
-  stickyNote.setAttribute("title", meta.issueName || "");
-  stickyNote.setAttribute("text", meta.description || "");
-  stickyNote.style.left = "100%";
-  stickyNote.style.transform = "translateY(-50%) translateX(10px)";
-  stickyNote.style.top = `${verticalOffset}px`;
-  stickyNote.classList.add("show");
+  stickyNoteElement.setAttribute("title", meta.issueName || "");
+  stickyNoteElement.setAttribute("text", meta.description || "");
+  stickyNoteElement.style.left = "100%";
+  stickyNoteElement.style.transform = "translateY(-50%) translateX(10px)";
+  stickyNoteElement.style.top = `${verticalOffset}px`;
+  stickyNoteElement.classList.add("show");
 }
 
 function highlightPointsForCell(chart, cellX, cellY) {
