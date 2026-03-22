@@ -1,68 +1,57 @@
 # Discovery Grid Two
 
-Discovery Grid Two is a browser-based visualization that maps issues onto a 9x9 **Impact vs. Ignorance** grid, organizes them into quadrants, and provides interactive hover previews using a sticky note component.
-
----
+Discovery Grid Two is a Vite-based browser app that plots issues on a 9x9 Impact vs. Ignorance grid using Highcharts. Issues are grouped into quadrants, arranged within shared cells, and surfaced through hover-driven label highlighting plus a sticky note detail preview.
 
 ## Features
 
-* 📊 Highcharts-based 9x9 grid visualization
-* 🧭 Four quadrant grouping: Discovery, Specify, Navigate, Manage
-* 🔤 Automatic cell labeling (A, B, C...)
-* 📍 Multiple issue layout within a single grid cell
-* 🖱️ Interactive hover highlighting
-* 📝 Sticky note preview with issue details
-* 🔄 Dynamic resizing and square layout enforcement
-
----
-
-## Demo Layout
-
-* X-axis: **Impact (1–9)**
-* Y-axis: **Ignorance (1–9)**
-* Each issue is plotted as a point
-* Issues in the same cell are arranged using mini-layout grids
-
----
-
-## Project Structure
-
-```
-index.html          # App shell
-style.css           # Layout and host styling
-main.js             # Core visualization logic
-data_client.js      # Data loading utility
-issues_data.json    # Input dataset
-StickyNoteCard.js   # Sticky note web component
-```
-
----
+- 9x9 Highcharts scatter grid with quadrant backgrounds
+- Automatic grouping of issues by cell and quadrant
+- Stable cell lettering (`A`, `B`, `C`, ...)
+- Predefined in-cell layouts for crowded cells
+- Hover highlighting for cells, labels, and issue points
+- Sticky note preview powered by a custom web component
+- Lightweight automated tests for data and label logic
 
 ## Getting Started
 
-### 1. Install dependencies (if using Vite)
+### Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Run dev server
+### Run the dev server
 
 ```bash
 npm run dev
 ```
 
-### 3. Open in browser
+Open `http://localhost:5173`.
 
-```
-http://localhost:5173
+### Run tests
+
+```bash
+npm test
 ```
 
----
+### Build for production
+
+```bash
+npm run build
+```
+
+## Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite development server |
+| `npm test` | Run the Node test suite |
+| `npm run build` | Create a production build |
+| `npm run preview` | Preview the production build locally |
 
 ## Data Format
 
-The app expects a JSON array of issue objects:
+The app expects a JSON array of issue objects, typically loaded from `issues_data.json`.
 
 ```json
 [
@@ -77,36 +66,97 @@ The app expects a JSON array of issue objects:
 
 ### Required fields
 
-| Field       | Type   | Description            |
-| ----------- | ------ | ---------------------- |
-| Impact      | number | X-axis position (1–9)  |
-| Ignorance   | number | Y-axis position (1–9)  |
-| Description | string | Main issue description |
+| Field | Type | Description |
+| --- | --- | --- |
+| `Impact` | number | X-axis position, `1` through `9` |
+| `Ignorance` | number | Y-axis position, `1` through `9` |
+| `Description` | string | Main issue description |
 
-### Optional
+### Optional fields
 
-| Field      | Description    |
-| ---------- | -------------- |
-| Issue Name | Fallback title |
-
----
+| Field | Description |
+| --- | --- |
+| `Issue Name` | Fallback display name if no generated title is used |
 
 ## Quadrants
 
-| Quadrant | Range          | Label     |
-| -------- | -------------- | --------- |
-| Q1       | x: 0–3, y: 0–3 | Manage    |
-| Q2       | x: 4–8, y: 0–3 | Navigate  |
-| Q3       | x: 0–3, y: 4–8 | Specify   |
-| Q4       | x: 4–8, y: 4–8 | Discovery |
+| Quadrant | Range | Label |
+| --- | --- | --- |
+| `Q1` | `x: 0-3`, `y: 0-3` | Manage |
+| `Q2` | `x: 4-8`, `y: 0-3` | Navigate |
+| `Q3` | `x: 0-3`, `y: 4-8` | Specify |
+| `Q4` | `x: 4-8`, `y: 4-8` | Discovery |
 
----
+## Project Structure
+
+```text
+index.html
+src/
+  main.js
+  style.css
+  components/
+    StickyNoteCard.js
+  chart/
+    constants.js
+    data.js
+    data.test.js
+    interactions.js
+    labels.js
+    labels.test.js
+    renderChart.js
+  utils/
+    data_client.js
+```
+
+## Architecture
+
+### Entry point
+
+[`src/main.js`](/Users/Dave/Highcharts/discovery-grid-2/src/main.js) loads the dataset, transforms it into chart-ready structures, and calls the chart renderer.
+
+### Data layer
+
+[`src/chart/data.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/data.js) handles:
+
+- filtering and normalizing raw issue data
+- assigning issues to cells and quadrants
+- generating in-cell point layouts
+- deriving hover styles from quadrant color mappings
+
+### Label layer
+
+[`src/chart/labels.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/labels.js) builds the right-side issue list, creates quadrant labels, and positions all custom labels during chart redraws.
+
+### Interaction layer
+
+[`src/chart/interactions.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/interactions.js) manages hover state, sticky note behavior, label emphasis, and cell/point activation.
+
+### Chart layer
+
+[`src/chart/renderChart.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/renderChart.js) owns the Highcharts configuration and wires the label and interaction layers into the chart lifecycle.
+
+## Testing
+
+Tests use Node's built-in test runner, so no extra test framework is required.
+
+Current coverage includes:
+
+- data filtering and title generation
+- cell and quadrant grouping
+- hover style mapping
+- jittered point and hover point generation
+- label grouping and label layout positioning
+
+Test files:
+
+- [`src/chart/data.test.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/data.test.js)
+- [`src/chart/labels.test.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/labels.test.js)
 
 ## Sticky Note Component
 
-Used for hover previews.
+Hover previews are rendered through the custom element defined in [`src/components/StickyNoteCard.js`](/Users/Dave/Highcharts/discovery-grid-2/src/components/StickyNoteCard.js).
 
-### Example
+Example host markup:
 
 ```html
 <sticky-note
@@ -118,107 +168,12 @@ Used for hover previews.
 ></sticky-note>
 ```
 
-### Behavior
+## Current Notes
 
-* Updates on hover
-* Positioned relative to chart container
-* Controlled via `main.js`
-
----
-
-## Key Concepts
-
-### Cell Grouping
-
-Issues are grouped by grid cell:
-
-```
-(x, y) → cell → multiple issues
-```
-
-Each cell gets a letter label (A, B, C...).
-
----
-
-### Layout Engine
-
-Multiple issues in one cell are arranged using predefined layouts or fallback grid positioning.
-
----
-
-### Hover Interaction
-
-Hovering an issue label:
-
-* Highlights the corresponding grid cell
-* Highlights label text
-* Displays sticky note with details
-
----
-
-## Important Functions
-
-### `buildBasePoints(data)`
-
-Transforms raw data into chart-ready points.
-
-### `groupData(points)`
-
-Groups issues by cell and quadrant.
-
-### `buildJitteredPoints(cellGroups)`
-
-Positions issues within each cell.
-
-### `renderChart()`
-
-Initializes the Highcharts visualization.
-
-### `bindIssueLabelEvents()`
-
-Handles hover interactions and sticky note updates.
-
----
-
-## Styling Notes
-
-* `.square-container` controls layout and positioning
-* `.stickyNote` is only a positioning wrapper (not visual)
-* Sticky note visuals are inside the web component (Shadow DOM)
-
----
-
-## Development Notes
-
-* Uses ES modules (Vite-based setup)
-* Sticky note is a custom Web Component
-* Highcharts handles rendering and scaling
-
----
-
-## Known Limitations
-
-* Sticky note may overflow viewport on narrow screens
-* Full re-render on attribute changes (simple but not optimized)
-* Accessibility can be improved (ARIA labels, roles)
-
----
-
-## Future Improvements
-
-* Responsive sticky note positioning (left/right auto-flip)
-* Keyboard navigation for issues
-* Filtering/search for issues
-* Export or snapshot functionality
-
----
+- The app is optimized for hover-based exploration on desktop-sized layouts.
+- Sticky note positioning is functional but could still be improved for tighter viewport constraints.
+- Accessibility and keyboard interaction remain good next-step improvements.
 
 ## License
 
-Internal / proprietary (update as needed)
-
----
-
-## Author Notes
-
-This project focuses on clarity of visualization and interaction simplicity rather than framework complexity. It intentionally uses lightweight architecture with minimal dependencies.
+Internal / proprietary.
