@@ -16,6 +16,7 @@ export function renderChart({
   quadrantGroups,
   cellGroups,
   stickyNoteElement,
+  stickyNoteHintElement,
   title = "Discovery Grid",
 }) {
   return Highcharts.chart(chartElement, {
@@ -30,7 +31,10 @@ export function renderChart({
           const chart = this;
           initializeChartLabels(chart, quadrantGroups, cellGroups);
           chart.issueLabelsByCell = buildIssueLabelsByCell(chart.customLabels);
-          initializeChartInteractions(chart, { stickyNoteElement });
+          initializeChartInteractions(chart, {
+            stickyNoteElement,
+            stickyNoteHintElement,
+          });
 
           enforceSquarePlot(chart);
           positionLabels(chart);

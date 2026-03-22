@@ -27,6 +27,8 @@ function createNoteDouble() {
     },
     textInput: {
       value: "",
+      scrollHeight: 120,
+      clientHeight: 60,
       classList: {
         toggle() {},
       },
@@ -92,6 +94,7 @@ test("attributeChangedCallback updates only the targeted field handlers", () => 
   assert.deepEqual(calls, [
     "title",
     "text",
+    "resize",
     "theme",
     "variant",
     "title-constraints",
@@ -111,6 +114,7 @@ test("refreshUI synchronizes theme, constraints, values, and mode", () => {
   note.updateTextConstraints = () => calls.push("text-constraints");
   note.updateTitle = () => calls.push("title");
   note.updateText = () => calls.push("text");
+  note.updateExpansion = () => calls.push("expansion");
   note.syncMode = () => calls.push("sync");
   note.autoResize = () => calls.push("resize");
 
@@ -123,6 +127,7 @@ test("refreshUI synchronizes theme, constraints, values, and mode", () => {
     "text-constraints",
     "title",
     "text",
+    "expansion",
     "sync",
     "resize",
   ]);
@@ -151,4 +156,22 @@ test("update helpers patch cached refs without re-rendering", () => {
   assert.equal(note._refs.note.className, "sticky-note compact");
   assert.equal(note._refs.titleInput.maxLength, 32);
   assert.equal(note._refs.textInput.style["--max-lines"], "7");
+});
+
+test("updateTruncationState exposes whether readonly content is truncated", () => {
+  const note = createNoteDouble();
+  note._attrs.set("text", "Long body text");
+  note._refs.textInput.value = "Long body text";
+
+  note.updateTruncationState();
+  assert.equal(note.getAttribute("data-truncated"), "true");
+
+  note._refs.textInput.clientHeight = 120;
+  note.updateTruncationState();
+  assert.equal(note.getAttribute("data-truncated"), "false");
+
+  note.setAttribute("expanded", "");
+  note._refs.textInput.clientHeight = 60;
+  note.updateTruncationState();
+  assert.equal(note.getAttribute("data-truncated"), "false");
 });

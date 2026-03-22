@@ -1,27 +1,27 @@
 # Discovery Grid Two
 
-Discovery Grid Two is a Vite-based browser app and embeddable widget that plots issues on a 9x9 Impact vs. Ignorance grid using Highcharts. Issues are grouped into quadrants, arranged within shared cells, and surfaced through hover-driven label highlighting plus a sticky note detail preview.
+Discovery Grid Two is a Vite-based Highcharts project that renders issues on a 9x9 Impact vs. Ignorance grid. It can run as a standalone demo app or be mounted as an embeddable widget inside another web application, including an Angular host.
 
 ## Features
 
-- 9x9 Highcharts scatter grid with quadrant backgrounds
-- Automatic grouping of issues by cell and quadrant
-- Stable cell lettering (`A`, `B`, `C`, ...)
-- Predefined in-cell layouts for crowded cells
-- Hover highlighting for cells, labels, and issue points
-- Sticky note preview powered by a custom web component
-- Embeddable widget API for mounting inside another application
-- Lightweight automated tests for data and label logic
+- 9x9 Highcharts scatter grid with quadrant background regions
+- Stable grouping of issues into cells, quadrants, and cell letters
+- Right-side issue list with hover-linked grid highlighting
+- Sticky note issue preview powered by a custom web component
+- Double-click label expansion for truncated sticky note content
+- Smooth sticky note and helper-hint hover transitions
+- Embeddable widget API with `updateData()`, `resize()`, and `destroy()`
+- Node-based regression tests for data, labels, interactions, and sticky note behavior
 
 ## Getting Started
 
-### Install dependencies
+### Install
 
 ```bash
 npm install
 ```
 
-### Run the dev server
+### Run the demo
 
 ```bash
 npm run dev
@@ -35,10 +35,16 @@ Open `http://localhost:5173`.
 npm test
 ```
 
-### Build for production
+### Build
 
 ```bash
 npm run build
+```
+
+### Preview the production build
+
+```bash
+npm run preview
 ```
 
 ## Scripts
@@ -49,10 +55,11 @@ npm run build
 | `npm test` | Run the Node test suite |
 | `npm run build` | Create a production build |
 | `npm run preview` | Preview the production build locally |
+| `npm run deploy` | Publish `dist/` with `gh-pages` |
 
 ## Data Format
 
-The app expects a JSON array of issue objects, typically loaded from `issues_data.json`.
+The widget expects an array of issue objects.
 
 ```json
 [
@@ -77,11 +84,11 @@ The app expects a JSON array of issue objects, typically loaded from `issues_dat
 
 | Field | Description |
 | --- | --- |
-| `Issue Name` | Fallback display name if no generated title is used |
+| `Issue Name` | Display label when present; otherwise a title can be derived from the description |
 
 ## Quadrants
 
-| Quadrant | Range | Label |
+| Quadrant | Range | Display Label |
 | --- | --- | --- |
 | `Q1` | `x: 0-3`, `y: 0-3` | Manage |
 | `Q2` | `x: 4-8`, `y: 0-3` | Navigate |
@@ -97,60 +104,74 @@ src/
   discoveryGridWidget.js
   main.js
   style.css
-  components/
-    StickyNoteCard.js
   chart/
     constants.js
     data.js
     data.test.js
     interactions.js
+    interactions.test.js
     labels.js
     labels.test.js
     renderChart.js
+  components/
+    README.md
+    StickyNoteCard.js
+    StickyNoteCard.test.js
   utils/
     data_client.js
 ```
 
 ## Architecture
 
-### Demo entry point
+### Demo entry
 
-[`src/main.js`](/Users/Dave/Highcharts/discovery-grid-2/src/main.js) powers the standalone demo page. It loads sample data and mounts the widget into the demo host element.
+[`src/main.js`](/Users/Dave/Highcharts/discovery-grid-2/src/main.js) loads sample data and mounts the widget into the standalone demo page.
 
-### Widget entry point
+### Widget entry
 
-[`src/discoveryGridWidget.js`](/Users/Dave/Highcharts/discovery-grid-2/src/discoveryGridWidget.js) exposes the embeddable API. It owns widget-scoped DOM creation, data updates, resize handling, and teardown.
+[`src/discoveryGridWidget.js`](/Users/Dave/Highcharts/discovery-grid-2/src/discoveryGridWidget.js) exposes the embeddable API and creates widget-scoped DOM, including the chart container, sticky note, and helper hint.
 
 ### Data layer
 
-[`src/chart/data.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/data.js) handles:
+[`src/chart/data.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/data.js) is responsible for:
 
-- filtering and normalizing raw issue data
-- assigning issues to cells and quadrants
-- generating in-cell point layouts
-- deriving hover styles from quadrant color mappings
+- validating and normalizing raw issue rows
+- grouping issues by cell and quadrant
+- generating jittered plot points and cell hover points
+- deriving quadrant-aware hover colors and labels
 
 ### Label layer
 
-[`src/chart/labels.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/labels.js) builds the right-side issue list, creates quadrant labels, and positions all custom labels during chart redraws.
+[`src/chart/labels.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/labels.js) creates and positions:
+
+- quadrant headers
+- right-side issue labels
+- cell label collections used by the interaction layer
 
 ### Interaction layer
 
-[`src/chart/interactions.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/interactions.js) manages hover state, sticky note behavior, label emphasis, and cell/point activation.
+[`src/chart/interactions.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/interactions.js) manages:
+
+- grid-cell hover ownership between chart squares and issue labels
+- point and cell highlighting
+- sticky note show/hide timing
+- helper-hint visibility for truncated notes
+- double-click expansion behavior
+- single-label emphasis when multiple issues share the same grid square
 
 ### Chart layer
 
-[`src/chart/renderChart.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/renderChart.js) owns the Highcharts configuration and wires the label and interaction layers into the chart lifecycle.
+[`src/chart/renderChart.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/renderChart.js) contains the Highcharts configuration and wires the label and interaction modules into chart load and redraw events.
 
 ### Styling
 
-[`src/style.css`](/Users/Dave/Highcharts/discovery-grid-2/src/style.css) contains widget-scoped styles for embedding.
+[`src/style.css`](/Users/Dave/Highcharts/discovery-grid-2/src/style.css) contains widget-scoped styles used for embedding, including sticky note and helper-hint transitions.
 
-[`src/demo.css`](/Users/Dave/Highcharts/discovery-grid-2/src/demo.css) contains demo-page-only styles and should not be required by a host app integration.
+[`src/demo.css`](/Users/Dave/Highcharts/discovery-grid-2/src/demo.css) contains demo-page-only layout styles.
 
 ## Embedded Widget API
 
-The widget can be mounted into any host element:
+Import and mount the widget into a host element:
 
 ```js
 import { mountDiscoveryGrid } from "./src/discoveryGridWidget.js";
@@ -165,26 +186,41 @@ const widget = mountDiscoveryGrid(hostElement, {
 
 | Option | Type | Description |
 | --- | --- | --- |
-| `data` | `Array` | Raw issue data to render |
+| `data` | `Array` | Raw issue records to render |
 | `title` | `string` | Chart title |
 | `stickyNote` | `boolean` | Enable or disable the sticky note preview |
-| `stickyNoteAttributes` | `object` | Attributes applied to the internal `<sticky-note>` element |
+| `stickyNoteAttributes` | `object` | Attributes forwarded to the internal `<sticky-note>` element |
 
 ### Controller methods
 
-`mountDiscoveryGrid(...)` returns a controller object with:
+`mountDiscoveryGrid(...)` returns:
 
 | Method | Description |
 | --- | --- |
-| `updateData(nextData)` | Re-render the widget with new data |
-| `resize()` | Trigger a chart reflow |
-| `destroy()` | Remove chart/event listeners and clear the host element |
-| `getChart()` | Return the underlying Highcharts instance |
-| `getHostElement()` | Return the mounted host element |
+| `updateData(nextData)` | Rebuild and rerender the widget with new data |
+| `resize()` | Trigger a Highcharts reflow |
+| `destroy()` | Remove the widget, chart, and event listeners from the host |
+| `getChart()` | Return the Highcharts chart instance |
+| `getHostElement()` | Return the host element used for mounting |
+
+## Sticky Note Behavior
+
+Hovering an issue label shows a sticky note preview beside the issue list.
+
+Current behavior includes:
+
+- smooth fade/slide transitions for the sticky note and helper hint
+- square highlighting that remains stable while hovering a matching issue label
+- only the hovered issue label is emphasized when multiple issues share one cell
+- a helper hint shown only when the current sticky note is truncated
+- double-click on an issue label to expand a truncated sticky note
+- automatic reset back to truncated mode when hover ends
+
+The sticky note UI is implemented by [`src/components/StickyNoteCard.js`](/Users/Dave/Highcharts/discovery-grid-2/src/components/StickyNoteCard.js).
 
 ## Angular Integration Example
 
-At a high level, Angular should own the host element and data, while the widget owns rendering and hover state.
+Angular should own the host element and input data, while the widget owns rendering and hover behavior.
 
 ```ts
 import {
@@ -233,52 +269,30 @@ export class DiscoveryGridComponent
 ### Integration notes
 
 - Give the host element an explicit width and height.
-- Call `destroy()` when the Angular component is torn down.
-- Use `updateData()` when inputs change.
-- The widget no longer depends on global IDs like `#container` or `#hoverStickyNote`.
+- Call `destroy()` from `ngOnDestroy()`.
+- Use `updateData()` when Angular inputs change.
+- The widget is host-scoped and does not depend on global IDs like `#container`.
 
 ## Testing
 
-Tests use Node's built-in test runner, so no extra test framework is required.
+Tests use Node's built-in test runner.
 
-Current coverage includes:
+```bash
+npm test
+```
 
-- data filtering and title generation
+Current test coverage includes:
+
+- data shaping and title generation
 - cell and quadrant grouping
-- hover style mapping
 - jittered point and hover point generation
-- label grouping and label layout positioning
+- label grouping and layout positioning
+- interaction regressions around cell highlighting and shared-cell issue labels
+- sticky note component update behavior and truncation detection
 
 Test files:
 
 - [`src/chart/data.test.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/data.test.js)
 - [`src/chart/labels.test.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/labels.test.js)
-
-## Sticky Note Component
-
-Hover previews are rendered through the custom element defined in [`src/components/StickyNoteCard.js`](/Users/Dave/Highcharts/discovery-grid-2/src/components/StickyNoteCard.js).
-
-The widget creates the sticky note element internally when `stickyNote` is enabled.
-
-Example rendered markup:
-
-```html
-<sticky-note
-  id="hoverStickyNote"
-  class="stickyNote"
-  title=""
-  text=""
-  readonly
-></sticky-note>
-```
-
-## Current Notes
-
-- The app is optimized for hover-based exploration on desktop-sized layouts.
-- Sticky note positioning is functional but could still be improved for tighter viewport constraints.
-- The embedded widget expects the host container to control its final size.
-- Accessibility and keyboard interaction remain good next-step improvements.
-
-## License
-
-Internal / proprietary.
+- [`src/chart/interactions.test.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/interactions.test.js)
+- [`src/components/StickyNoteCard.test.js`](/Users/Dave/Highcharts/discovery-grid-2/src/components/StickyNoteCard.test.js)

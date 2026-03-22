@@ -86,6 +86,7 @@ export function mountDiscoveryGrid(hostElement, options = {}) {
     return renderChart({
       chartElement: widgetElements.chartElement,
       stickyNoteElement: widgetElements.stickyNoteElement,
+      stickyNoteHintElement: widgetElements.stickyNoteHintElement,
       title: settings.title,
       jitteredPoints,
       cellHoverPoints,
@@ -100,6 +101,7 @@ function createWidgetElements(hostElement, settings) {
   container.className = "discovery-grid-widget";
 
   let stickyNoteElement = null;
+  let stickyNoteHintElement = null;
   if (settings.stickyNote) {
     stickyNoteElement = document.createElement("sticky-note");
     stickyNoteElement.className = "stickyNote";
@@ -120,6 +122,11 @@ function createWidgetElements(hostElement, settings) {
     });
 
     container.appendChild(stickyNoteElement);
+
+    stickyNoteHintElement = document.createElement("div");
+    stickyNoteHintElement.className = "stickyNoteHint";
+    stickyNoteHintElement.textContent = "Double-click label to expand";
+    container.appendChild(stickyNoteHintElement);
   }
 
   const chartElement = document.createElement("div");
@@ -132,5 +139,6 @@ function createWidgetElements(hostElement, settings) {
     container,
     chartElement,
     stickyNoteElement,
+    stickyNoteHintElement,
   };
 }

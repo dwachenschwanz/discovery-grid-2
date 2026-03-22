@@ -70,6 +70,7 @@ export class StickyNote extends HTMLElement {
         break;
       case 'text':
         this.updateText();
+        this.autoResize();
         break;
       case 'color':
         this.updateTheme();
@@ -329,14 +330,17 @@ export class StickyNote extends HTMLElement {
     if (this.expanded) {
       text.style.height = 'auto';
       text.style.height = `${text.scrollHeight}px`;
+      this.updateTruncationState();
       return;
     }
     if (!this._editing) {
       text.style.height = 'auto';
+      this.updateTruncationState();
       return;
     }
     text.style.height = 'auto';
     text.style.height = text.scrollHeight + 'px';
+    this.updateTruncationState();
   }
   
 /**
@@ -461,6 +465,21 @@ export class StickyNote extends HTMLElement {
           flex: 1 1 auto;
         }
 
+        .note-text-wrapper::after {
+          content: "";
+          position: absolute;
+          inset: auto 0 0;
+          height: 24px;
+          pointer-events: none;
+          background: linear-gradient(
+            to bottom,
+            rgba(167, 177, 240, 0),
+            rgba(167, 177, 240, 0.95)
+          );
+          opacity: 0;
+          transition: opacity 120ms ease;
+        }
+
         .note-text {
           display: block;
           min-height: calc(1em * var(--max-lines, 5) * 1.35);
@@ -560,6 +579,11 @@ export class StickyNote extends HTMLElement {
           -webkit-line-clamp: initial;
           line-clamp: initial;
         }
+
+        :host([data-truncated="true"]:not([expanded])) .note-text-wrapper::after {
+          opacity: 1;
+        }
+
       </style>
 
       <div class="sticky-note ${this.variant}" part="container" data-tooltip-position="${this.escapeAttr(this.tooltipPosition)}">
@@ -621,6 +645,19 @@ export class StickyNote extends HTMLElement {
     this.updateExpansion();
     this.syncMode();
     this.autoResize();
+  }
+
+  updateTruncationState() {
+    const textInput = this._refs?.textInput;
+    if (!textInput) return;
+
+    const hasContent = textInput.value.trim().length > 0;
+    const isTruncated = !this._editing &&
+      !this.expanded &&
+      hasContent &&
+      (textInput.scrollHeight - textInput.clientHeight > 1);
+
+    this.setAttribute('data-truncated', isTruncated ? 'true' : 'false');
   }
 
   updateTheme() {

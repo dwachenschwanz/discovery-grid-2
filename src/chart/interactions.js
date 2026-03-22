@@ -16,6 +16,8 @@ export function initializeChartInteractions(chart, options = {}) {
     label: null,
   };
   chart.stickyNoteElement = options.stickyNoteElement ?? null;
+  chart.stickyNoteHintElement = options.stickyNoteHintElement ?? null;
+  chart.stickyNoteHideTimer = null;
 
   initializeIssueLabelInteractions(chart);
 }
@@ -40,7 +42,12 @@ export function activateCellHover(chart, cellKey, source = "grid") {
     chart.hoverSources[source] = cellKey;
   }
 
-  if (chart.activeCellKey === cellKey) return;
+  const [cellX, cellY] = cellKey.split("-").map(Number);
+
+  if (chart.activeCellKey === cellKey) {
+    highlightIssueLabelsForCell(chart, cellX, cellY, source);
+    return;
+  }
 
   if (chart.activeCellKey) {
     clearPointHighlight(chart);
@@ -50,12 +57,11 @@ export function activateCellHover(chart, cellKey, source = "grid") {
     previousCellPoints.forEach((point) => setCellPointActive(point, false));
   }
 
-  const [cellX, cellY] = cellKey.split("-").map(Number);
   const nextCellPoints = chart.cellPointsByKey?.[cellKey] ?? [];
   nextCellPoints.forEach((point) => setCellPointActive(point, true));
 
   highlightPointsForCell(chart, cellX, cellY);
-  highlightIssueLabelsForCell(chart, cellX, cellY);
+  highlightIssueLabelsForCell(chart, cellX, cellY, source);
   chart.activeCellKey = cellKey;
 }
 
@@ -147,6 +153,7 @@ function setIssueLabelState(meta, state = "normal") {
   });
   if (meta.label?.element) {
     meta.label.element.style.opacity = String(style.opacity);
+    meta.label.element.style.transition = "opacity 140ms ease";
   }
 
   meta.__state = state;
@@ -186,20 +193,31 @@ function setQuadrantHeaderState(meta, state = "normal") {
 
   if (meta.label?.element) {
     meta.label.element.style.opacity = String(style.opacity);
+    meta.label.element.style.transition = "opacity 140ms ease";
   }
 
   meta.__state = state;
 }
 
-function highlightIssueLabelsForCell(chart, cellX, cellY) {
+function highlightIssueLabelsForCell(chart, cellX, cellY, source = "grid") {
   const cellKey = `${cellX}-${cellY}`;
-  if (chart.activeHighlightedCellKey === cellKey) return;
+  const activeIssueKey = source === "label" ? chart.activeIssueLabelKey : null;
+
+  if (
+    chart.activeHighlightedCellKey === cellKey &&
+    chart.activeHighlightedIssueKey === activeIssueKey
+  ) {
+    return;
+  }
 
   const allIssueLabels = chart.labelCollections?.issues ?? [];
   const allHeaders = chart.labelCollections?.headers ?? [];
   const previousCellKey = chart.activeHighlightedCellKey;
   const matching = chart.issueLabelsByCell?.[cellKey] ?? [];
-  const activeQuadrants = new Set(matching.map((m) => m.quadrant));
+  const highlightedLabels = activeIssueKey
+    ? matching.filter((meta) => `${meta.cellKey}::${meta.issueName}` === activeIssueKey)
+    : matching;
+  const activeQuadrants = new Set(highlightedLabels.map((m) => m.quadrant));
 
   if (!previousCellKey) {
     allIssueLabels.forEach((meta) => {
@@ -225,7 +243,7 @@ function highlightIssueLabelsForCell(chart, cellX, cellY) {
     });
   }
 
-  matching.forEach((meta) => {
+  highlightedLabels.forEach((meta) => {
     setIssueLabelState(meta, "highlight");
   });
 
@@ -237,6 +255,7 @@ function highlightIssueLabelsForCell(chart, cellX, cellY) {
   });
 
   chart.activeHighlightedCellKey = cellKey;
+  chart.activeHighlightedIssueKey = activeIssueKey;
 }
 
 function clearIssueLabelHighlight(chart) {
@@ -254,6 +273,7 @@ function clearIssueLabelHighlight(chart) {
   });
 
   chart.activeHighlightedCellKey = null;
+  chart.activeHighlightedIssueKey = null;
 }
 
 function initializeIssueLabelInteractions(chart) {
@@ -271,6 +291,7 @@ function initializeIssueLabelInteractions(chart) {
     const meta = chart.issueLabelMetaByKey?.[issueKey];
     if (!meta) return;
 
+    cancelStickyNoteHide(chart);
     chart.activeIssueLabelKey = issueKey;
     activateCellHover(chart, meta.cellKey, "label");
     setIssueLabelState(meta, "highlight");
@@ -284,7 +305,10 @@ function initializeIssueLabelInteractions(chart) {
     const meta = chart.issueLabelMetaByKey?.[issueKey];
     if (!meta) return;
 
-    toggleStickyNoteExpansion(meta.chart?.stickyNoteElement ?? null);
+    toggleStickyNoteExpansion(
+      meta.chart?.stickyNoteElement ?? null,
+      meta.chart?.stickyNoteHintElement ?? null,
+    );
   });
 
   chart.container.addEventListener("mouseout", (event) => {
@@ -302,8 +326,7 @@ function initializeIssueLabelInteractions(chart) {
     }
 
     deactivateCellHover(chart, meta.cellKey, "label");
-    resetStickyNoteExpansion(chart.stickyNoteElement);
-    chart.stickyNoteElement?.classList.remove("show");
+    scheduleStickyNoteHide(chart);
   });
 }
 
@@ -316,9 +339,12 @@ function getIssueKeyFromEventTarget(target) {
 
 function showStickyNoteForIssue(meta) {
   const stickyNoteElement = meta.chart?.stickyNoteElement ?? null;
+  const stickyNoteHintElement = meta.chart?.stickyNoteHintElement ?? null;
   if (!stickyNoteElement || !meta.label?.element) return;
 
+  cancelStickyNoteHide(meta.chart);
   resetStickyNoteExpansion(stickyNoteElement);
+  hideStickyNoteHint(stickyNoteHintElement);
 
   const labelRect = meta.label.element.getBoundingClientRect();
   const parentRect = meta.label.element.parentElement?.getBoundingClientRect();
@@ -333,19 +359,34 @@ function showStickyNoteForIssue(meta) {
   stickyNoteElement.style.transform = "translateY(-50%) translateX(10px)";
   stickyNoteElement.style.top = `${verticalOffset}px`;
   stickyNoteElement.classList.add("show");
+
+  // Recompute truncation after the note content and visible state are in place.
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => {
+      stickyNoteElement.autoResize?.();
+      updateStickyNoteHint(stickyNoteElement, stickyNoteHintElement);
+    });
+    return;
+  }
+
+  stickyNoteElement.autoResize?.();
+  updateStickyNoteHint(stickyNoteElement, stickyNoteHintElement);
 }
 
-function toggleStickyNoteExpansion(stickyNoteElement) {
+function toggleStickyNoteExpansion(stickyNoteElement, stickyNoteHintElement) {
   if (!stickyNoteElement) return;
 
   const expanded = stickyNoteElement.dataset.expanded === "true";
   if (expanded) {
     resetStickyNoteExpansion(stickyNoteElement);
+    stickyNoteElement.autoResize?.();
+    updateStickyNoteHint(stickyNoteElement, stickyNoteHintElement);
     return;
   }
 
   stickyNoteElement.dataset.expanded = "true";
   stickyNoteElement.setAttribute("expanded", "");
+  hideStickyNoteHint(stickyNoteHintElement);
 }
 
 function resetStickyNoteExpansion(stickyNoteElement) {
@@ -353,6 +394,58 @@ function resetStickyNoteExpansion(stickyNoteElement) {
 
   stickyNoteElement.dataset.expanded = "false";
   stickyNoteElement.removeAttribute("expanded");
+}
+
+function updateStickyNoteHint(stickyNoteElement, stickyNoteHintElement) {
+  if (!stickyNoteElement || !stickyNoteHintElement) return;
+
+  const isTruncated =
+    stickyNoteElement.getAttribute("data-truncated") === "true";
+
+  if (!isTruncated) {
+    hideStickyNoteHint(stickyNoteHintElement);
+    return;
+  }
+
+  const noteRect = stickyNoteElement.getBoundingClientRect();
+  const parentRect =
+    stickyNoteElement.parentElement?.getBoundingClientRect() ?? null;
+
+  if (!parentRect) {
+    hideStickyNoteHint(stickyNoteHintElement);
+    return;
+  }
+
+  const top = noteRect.bottom - parentRect.top + 6;
+  const left = noteRect.left - parentRect.left;
+  stickyNoteHintElement.style.left = `${left}px`;
+  stickyNoteHintElement.style.top = `${top}px`;
+  stickyNoteHintElement.style.width = `${noteRect.width}px`;
+  stickyNoteHintElement.style.transform = "none";
+  stickyNoteHintElement.classList.add("show");
+}
+
+function hideStickyNoteHint(stickyNoteHintElement) {
+  if (!stickyNoteHintElement) return;
+  stickyNoteHintElement.style.width = "";
+  stickyNoteHintElement.classList.remove("show");
+}
+
+function scheduleStickyNoteHide(chart) {
+  cancelStickyNoteHide(chart);
+
+  chart.stickyNoteHideTimer = setTimeout(() => {
+    resetStickyNoteExpansion(chart.stickyNoteElement);
+    chart.stickyNoteElement?.classList.remove("show");
+    hideStickyNoteHint(chart.stickyNoteHintElement);
+    chart.stickyNoteHideTimer = null;
+  }, 90);
+}
+
+function cancelStickyNoteHide(chart) {
+  if (!chart?.stickyNoteHideTimer) return;
+  clearTimeout(chart.stickyNoteHideTimer);
+  chart.stickyNoteHideTimer = null;
 }
 
 function highlightPointsForCell(chart, cellX, cellY) {

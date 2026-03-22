@@ -33,6 +33,23 @@ function createIssuePoint() {
   };
 }
 
+function createLabelMeta(cellKey, issueName, quadrant = "Promote") {
+  return {
+    cellKey,
+    issueName,
+    quadrant,
+    label: {
+      cssCalls: [],
+      css(payload) {
+        this.cssCalls.push(payload);
+      },
+      element: {
+        style: {},
+      },
+    },
+  };
+}
+
 function createChart() {
   const cellPoint = createCellPoint(4, 4);
   const issuePoint = createIssuePoint();
@@ -94,4 +111,36 @@ test("label hover keeps the grid cell highlighted without using point hover stat
     "stroke-width": 0,
   });
   assert.deepEqual(chart.__mocks.issuePoint.setStateCalls, ["hover", ""]);
+});
+
+test("label hover highlights only the hovered issue when multiple labels share a cell", () => {
+  const chart = createChart();
+  const issueA = createLabelMeta("4-4", "Issue A");
+  const issueB = createLabelMeta("4-4", "Issue B");
+  const header = createLabelMeta("0-0", "Promote", "Promote");
+
+  chart.issueLabelsByCell = {
+    "4-4": [issueA, issueB],
+  };
+  chart.labelCollections = {
+    issues: [issueA, issueB],
+    headers: [header],
+    headersByQuadrant: {
+      Promote: header,
+    },
+  };
+  chart.activeIssueLabelKey = "4-4::Issue A";
+
+  activateCellHover(chart, "4-4", "label");
+
+  assert.equal(issueA.__state, "highlight");
+  assert.equal(issueB.__state, "dim");
+  assert.equal(header.__state, "highlight");
+
+  chart.activeIssueLabelKey = "4-4::Issue B";
+  activateCellHover(chart, "4-4", "label");
+
+  assert.equal(issueA.__state, "dim");
+  assert.equal(issueB.__state, "highlight");
+  assert.equal(chart.activeHighlightedIssueKey, "4-4::Issue B");
 });
