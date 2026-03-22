@@ -11,6 +11,10 @@ export function initializeChartInteractions(chart, options = {}) {
   chart.activeCellKey = null;
   chart.activeHighlightedCellKey = null;
   chart.activeIssueLabelKey = null;
+  chart.hoverSources = {
+    grid: null,
+    label: null,
+  };
   chart.stickyNoteElement = options.stickyNoteElement ?? null;
 
   initializeIssueLabelInteractions(chart);
@@ -31,7 +35,11 @@ export function buildIssueLabelsByCell(labels) {
   return byCell;
 }
 
-export function activateCellHover(chart, cellKey) {
+export function activateCellHover(chart, cellKey, source = "grid") {
+  if (chart.hoverSources) {
+    chart.hoverSources[source] = cellKey;
+  }
+
   if (chart.activeCellKey === cellKey) return;
 
   if (chart.activeCellKey) {
@@ -51,7 +59,18 @@ export function activateCellHover(chart, cellKey) {
   chart.activeCellKey = cellKey;
 }
 
-export function deactivateCellHover(chart, cellKey) {
+export function deactivateCellHover(chart, cellKey, source = "grid") {
+  if (chart.hoverSources?.[source] === cellKey) {
+    chart.hoverSources[source] = null;
+  }
+
+  const nextCellKey = chart.hoverSources?.label ?? chart.hoverSources?.grid ?? null;
+  if (nextCellKey && nextCellKey !== cellKey) {
+    activateCellHover(chart, nextCellKey, source);
+    return;
+  }
+
+  if (nextCellKey === cellKey) return;
   if (chart.activeCellKey !== cellKey) return;
 
   clearPointHighlight(chart);
@@ -253,7 +272,7 @@ function initializeIssueLabelInteractions(chart) {
     if (!meta) return;
 
     chart.activeIssueLabelKey = issueKey;
-    activateCellHover(chart, meta.cellKey);
+    activateCellHover(chart, meta.cellKey, "label");
     setIssueLabelState(meta, "highlight");
     showStickyNoteForIssue(meta);
   });
@@ -272,7 +291,7 @@ function initializeIssueLabelInteractions(chart) {
       chart.activeIssueLabelKey = null;
     }
 
-    deactivateCellHover(chart, meta.cellKey);
+    deactivateCellHover(chart, meta.cellKey, "label");
     chart.stickyNoteElement?.classList.remove("show");
   });
 }

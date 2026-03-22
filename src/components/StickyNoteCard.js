@@ -557,4 +557,3 @@ class StickyNote extends HTMLElement {
 if (!customElements.get('sticky-note')) {
   customElements.define('sticky-note', StickyNote);
 }
-
