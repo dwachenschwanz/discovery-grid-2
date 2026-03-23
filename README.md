@@ -10,7 +10,7 @@ Discovery Grid Two is a Vite-based Highcharts project that renders issues on a 9
 - Sticky note issue preview powered by a custom web component
 - Double-click label expansion for truncated sticky note content
 - Smooth sticky note and helper-hint hover transitions
-- Embeddable widget API with `updateData()`, `resize()`, and `destroy()`
+- Embeddable widget API with `updateData()`, `updateOptions()`, `resize()`, and `destroy()`
 - Node-based regression tests for data, labels, interactions, and sticky note behavior
 
 ## Getting Started
@@ -129,7 +129,11 @@ src/
 
 ### Widget entry
 
-[`src/discoveryGridWidget.js`](/Users/Dave/Highcharts/discovery-grid-2/src/discoveryGridWidget.js) exposes the embeddable API and creates widget-scoped DOM, including the chart container, sticky note, and helper hint.
+[`src/discoveryGridWidget.js`](/Users/Dave/Highcharts/discovery-grid-2/src/discoveryGridWidget.js) exposes the embeddable API, applies shared widget style defaults, and creates widget-scoped DOM, including the chart container, sticky note, and helper hint.
+
+### Shared constants
+
+[`src/chart/constants.js`](/Users/Dave/Highcharts/discovery-grid-2/src/chart/constants.js) centralizes chart margins, label spacing, hover timing, quadrant metadata, and widget style defaults so layout tuning is kept in one place.
 
 ### Data layer
 
@@ -198,10 +202,23 @@ const widget = mountDiscoveryGrid(hostElement, {
 | Method | Description |
 | --- | --- |
 | `updateData(nextData)` | Rebuild and rerender the widget with new data |
+| `updateOptions(nextOptions)` | Update title, sticky note settings, sticky note attributes, and optionally data |
 | `resize()` | Trigger a Highcharts reflow |
 | `destroy()` | Remove the widget, chart, and event listeners from the host |
 | `getChart()` | Return the Highcharts chart instance |
 | `getHostElement()` | Return the host element used for mounting |
+
+### Updating options
+
+```js
+widget.updateOptions({
+  title: "Updated Discovery Grid",
+  stickyNoteAttributes: {
+    color: "rgb(255, 240, 170)",
+    "max-lines": "6",
+  },
+});
+```
 
 ## Sticky Note Behavior
 
@@ -255,7 +272,9 @@ export class DiscoveryGridComponent
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['data'] && this.widget) {
+    if (!this.widget) return;
+
+    if (changes['data']) {
       this.widget.updateData(this.data);
     }
   }
@@ -271,6 +290,7 @@ export class DiscoveryGridComponent
 - Give the host element an explicit width and height.
 - Call `destroy()` from `ngOnDestroy()`.
 - Use `updateData()` when Angular inputs change.
+- Use `updateOptions()` when you need to change title or sticky note settings without changing the mounting point.
 - The widget is host-scoped and does not depend on global IDs like `#container`.
 
 ## Testing

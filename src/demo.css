@@ -44,6 +44,6 @@ body {
 .demo-grid-host {
   width: 200vmin;
   height: 200vmin;
-  max-width: 800px;
-  max-height: 800px;
+  max-width: 1000px;
+  max-height: 1000px;
 }

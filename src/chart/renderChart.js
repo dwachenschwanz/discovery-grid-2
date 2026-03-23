@@ -1,6 +1,6 @@
 import Highcharts from "highcharts";
 import "highcharts/highcharts-more";
-import { categories } from "./constants.js";
+import { categories, CHART_LAYOUT } from "./constants.js";
 import {
   activateCellHover,
   buildIssueLabelsByCell,
@@ -22,9 +22,9 @@ export function renderChart({
   return Highcharts.chart(chartElement, {
     chart: {
       type: "scatter",
-      marginRight: 220,
-      marginLeft: 180,
-      marginTop: 60,
+      marginRight: CHART_LAYOUT.marginRight,
+      marginLeft: CHART_LAYOUT.marginLeft,
+      marginTop: CHART_LAYOUT.marginTop,
       zoomType: null,
       events: {
         load: function () {

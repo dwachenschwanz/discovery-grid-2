@@ -1,4 +1,5 @@
 import {
+  LABEL_LAYOUT,
   QUADRANT_COLORS,
   QUADRANT_NAME_BY_KEY,
   QUADRANT_ORDER,
@@ -24,8 +25,8 @@ export function positionLabels(chart) {
 
   const quadrantLabels = grouped.quadrants ?? [];
 
-  const rightX = chart.plotLeft + chart.plotWidth + 8;
-  const issueTextX = rightX + 22;
+  const rightX = chart.plotLeft + chart.plotWidth + LABEL_LAYOUT.panelOffsetX;
+  const issueTextX = rightX + LABEL_LAYOUT.issueTextOffsetX;
 
   quadrantLabels.forEach(({ x, y, label }) => {
     label.attr({
@@ -35,12 +36,7 @@ export function positionLabels(chart) {
     });
   });
 
-  let currentY = chart.plotTop + 10;
-
-  const headerGap = 16;
-  const itemGap = 10;
-  const groupGap = 14;
-  const letterGap = 6;
+  let currentY = chart.plotTop + LABEL_LAYOUT.headerStartOffsetY;
 
   QUADRANT_ORDER.forEach((q) => {
     const items = grouped.issuesByQuadrant?.[q] ?? [];
@@ -53,7 +49,7 @@ export function positionLabels(chart) {
         y: currentY,
         align: "left",
       });
-      currentY += headerGap;
+      currentY += LABEL_LAYOUT.headerGap;
     }
 
     const byLetter = grouped.issuesByQuadrantAndLetter?.[q] ?? {};
@@ -69,30 +65,23 @@ export function positionLabels(chart) {
           align: "left",
         });
 
-        currentY += itemGap;
+        currentY += LABEL_LAYOUT.itemGap;
       });
 
-      currentY += letterGap;
+      currentY += LABEL_LAYOUT.letterGap;
     });
 
-    currentY += groupGap;
+    currentY += LABEL_LAYOUT.groupGap;
   });
 }
 
 function addQuadrantLabels(chart) {
-  const coords = [
-    { name: "Manage", x: 1.5, y: 1.5 },
-    { name: "Navigate", x: 6, y: 1.5 },
-    { name: "Specify", x: 1.5, y: 6 },
-    { name: "Discovery", x: 6, y: 6 },
-  ];
-
-  coords.forEach((q) => {
+  LABEL_LAYOUT.quadrantLabelCoords.forEach((q) => {
     const label = chart.renderer
       .text(q.name, 0, 0)
       .css({
         color: "#aaa",
-        fontSize: "35px",
+        fontSize: LABEL_LAYOUT.quadrantFontSize,
         fontWeight: "bold",
         textAlign: "center",
       })
@@ -147,8 +136,8 @@ function addIssueLabels(chart, quadrantGroups, cellGroups) {
     const header = chart.renderer
       .text(quadrantName)
       .css({
-        fontSize: "12px",
-        fontWeight: "bold",
+        fontSize: LABEL_LAYOUT.headerFontSize,
+        fontWeight: LABEL_LAYOUT.headerFontWeight,
         color: QUADRANT_COLORS[quadrantName],
       })
       .attr({
@@ -167,8 +156,8 @@ function addIssueLabels(chart, quadrantGroups, cellGroups) {
       const issueLabel = chart.renderer
         .text(`${item.cellLetter} · ${item.issueName}`)
         .css({
-          fontSize: "11px",
-          fontWeight: "500",
+          fontSize: LABEL_LAYOUT.issueFontSize,
+          fontWeight: LABEL_LAYOUT.issueFontWeight,
           color: QUADRANT_COLORS[quadrantName],
         })
         .attr({

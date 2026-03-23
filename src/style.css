@@ -3,6 +3,14 @@
   --discovery-grid-font-family: "Noto Sans", Times, serif, "Lucida Grande",
     sans-serif, Arial, sans-serif;
   --discovery-grid-color: #212529;
+  --discovery-grid-sticky-note-width: 190px;
+  --discovery-grid-sticky-note-offset-x: 10px;
+  --discovery-grid-sticky-note-enter-offset-y: 4px;
+  --discovery-grid-sticky-note-fade-duration: 140ms;
+  --discovery-grid-sticky-note-move-duration: 180ms;
+  --discovery-grid-sticky-note-hint-fade-duration: 120ms;
+  --discovery-grid-sticky-note-hint-move-duration: 160ms;
+  --discovery-grid-sticky-note-hint-enter-offset-y: -2px;
 
   font-family: var(--discovery-grid-font-family);
   font-size: var(--discovery-grid-font-size);
@@ -30,8 +38,9 @@
   position: absolute;
   left: 100%;
   top: 0;
-  transform: translateY(calc(-50% + 4px)) translateX(10px);
-  width: 190px;
+  transform: translateY(calc(-50% + var(--discovery-grid-sticky-note-enter-offset-y)))
+    translateX(var(--discovery-grid-sticky-note-offset-x));
+  width: var(--discovery-grid-sticky-note-width);
   height: auto;
   padding: 0;
   background: transparent;
@@ -44,19 +53,19 @@
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity 140ms ease,
-    transform 180ms ease,
-    visibility 0s linear 180ms;
+    opacity var(--discovery-grid-sticky-note-fade-duration) ease,
+    transform var(--discovery-grid-sticky-note-move-duration) ease,
+    visibility 0s linear var(--discovery-grid-sticky-note-move-duration);
   will-change: opacity, transform;
 }
 
 .discovery-grid-widget .stickyNote.show {
   opacity: 1;
   visibility: visible;
-  transform: translateY(-50%) translateX(10px);
+  transform: translateY(-50%) translateX(var(--discovery-grid-sticky-note-offset-x));
   transition:
-    opacity 140ms ease,
-    transform 180ms ease,
+    opacity var(--discovery-grid-sticky-note-fade-duration) ease,
+    transform var(--discovery-grid-sticky-note-move-duration) ease,
     visibility 0s linear 0s;
 }
 
@@ -64,7 +73,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  transform: translateY(-2px);
+  transform: translateY(var(--discovery-grid-sticky-note-hint-enter-offset-y));
   margin-top: 0;
   padding: 0;
   color: rgba(31, 36, 48, 0.72);
@@ -76,9 +85,9 @@
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 120ms ease,
-    transform 160ms ease,
-    visibility 0s linear 160ms;
+    opacity var(--discovery-grid-sticky-note-hint-fade-duration) ease,
+    transform var(--discovery-grid-sticky-note-hint-move-duration) ease,
+    visibility 0s linear var(--discovery-grid-sticky-note-hint-move-duration);
   will-change: opacity, transform;
 }
 
@@ -87,8 +96,8 @@
   visibility: visible;
   transform: translateY(0);
   transition:
-    opacity 120ms ease,
-    transform 160ms ease,
+    opacity var(--discovery-grid-sticky-note-hint-fade-duration) ease,
+    transform var(--discovery-grid-sticky-note-hint-move-duration) ease,
     visibility 0s linear 0s;
 }
 

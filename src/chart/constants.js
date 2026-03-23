@@ -25,6 +25,50 @@ export const DEFAULT_CELL_MARKER_STYLE = {
   lineWidth: 0,
 };
 
+export const CHART_LAYOUT = {
+  marginRight: 200,
+  marginLeft: 160,
+  marginTop: 50,
+};
+
+export const LABEL_LAYOUT = {
+  panelOffsetX: 8,
+  issueTextOffsetX: 22,
+  headerStartOffsetY: 10,
+  headerGap: 16,
+  itemGap: 10,
+  groupGap: 14,
+  letterGap: 6,
+  quadrantFontSize: "35px",
+  headerFontSize: "12px",
+  issueFontSize: "11px",
+  issueFontWeight: "500",
+  headerFontWeight: "bold",
+  quadrantLabelCoords: [
+    { name: "Manage", x: 1.5, y: 1.5 },
+    { name: "Navigate", x: 6, y: 1.5 },
+    { name: "Specify", x: 1.5, y: 6 },
+    { name: "Discovery", x: 6, y: 6 },
+  ],
+};
+
+export const INTERACTION_LAYOUT = {
+  stickyNoteHideDelayMs: 90,
+  stickyNoteHintOffsetY: 6,
+  labelOpacityTransition: "opacity 140ms ease",
+};
+
+export const WIDGET_STYLE_DEFAULTS = {
+  "--discovery-grid-sticky-note-width": "190px",
+  "--discovery-grid-sticky-note-offset-x": "10px",
+  "--discovery-grid-sticky-note-enter-offset-y": "4px",
+  "--discovery-grid-sticky-note-fade-duration": "140ms",
+  "--discovery-grid-sticky-note-move-duration": "180ms",
+  "--discovery-grid-sticky-note-hint-fade-duration": "120ms",
+  "--discovery-grid-sticky-note-hint-move-duration": "160ms",
+  "--discovery-grid-sticky-note-hint-enter-offset-y": "-2px",
+};
+
 export const LAYOUTS = {
   1: { cols: 1, rows: 1, positions: [{ col: 0, row: 0, center: true }] },
   2: {

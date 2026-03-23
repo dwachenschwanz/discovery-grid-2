@@ -1,5 +1,6 @@
 import {
   DEFAULT_CELL_MARKER_STYLE,
+  INTERACTION_LAYOUT,
   QUADRANT_COLORS,
 } from "./constants.js";
 import { getQuadrantHoverStyle } from "./data.js";
@@ -153,7 +154,7 @@ function setIssueLabelState(meta, state = "normal") {
   });
   if (meta.label?.element) {
     meta.label.element.style.opacity = String(style.opacity);
-    meta.label.element.style.transition = "opacity 140ms ease";
+    meta.label.element.style.transition = INTERACTION_LAYOUT.labelOpacityTransition;
   }
 
   meta.__state = state;
@@ -193,7 +194,7 @@ function setQuadrantHeaderState(meta, state = "normal") {
 
   if (meta.label?.element) {
     meta.label.element.style.opacity = String(style.opacity);
-    meta.label.element.style.transition = "opacity 140ms ease";
+    meta.label.element.style.transition = INTERACTION_LAYOUT.labelOpacityTransition;
   }
 
   meta.__state = state;
@@ -416,7 +417,8 @@ function updateStickyNoteHint(stickyNoteElement, stickyNoteHintElement) {
     return;
   }
 
-  const top = noteRect.bottom - parentRect.top + 6;
+  const top =
+    noteRect.bottom - parentRect.top + INTERACTION_LAYOUT.stickyNoteHintOffsetY;
   const left = noteRect.left - parentRect.left;
   stickyNoteHintElement.style.left = `${left}px`;
   stickyNoteHintElement.style.top = `${top}px`;
@@ -439,7 +441,7 @@ function scheduleStickyNoteHide(chart) {
     chart.stickyNoteElement?.classList.remove("show");
     hideStickyNoteHint(chart.stickyNoteHintElement);
     chart.stickyNoteHideTimer = null;
-  }, 90);
+  }, INTERACTION_LAYOUT.stickyNoteHideDelayMs);
 }
 
 function cancelStickyNoteHide(chart) {

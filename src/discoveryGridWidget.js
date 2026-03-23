@@ -6,6 +6,7 @@ import {
   buildJitteredPoints,
   groupData,
 } from "./chart/data.js";
+import { WIDGET_STYLE_DEFAULTS } from "./chart/constants.js";
 import { renderChart } from "./chart/renderChart.js";
 
 const DEFAULT_OPTIONS = {
@@ -20,20 +21,29 @@ const DEFAULT_OPTIONS = {
   },
 };
 
+function mergeWidgetOptions(baseOptions, nextOptions = {}) {
+  return {
+    ...baseOptions,
+    ...nextOptions,
+    stickyNoteAttributes: {
+      ...baseOptions.stickyNoteAttributes,
+      ...(nextOptions.stickyNoteAttributes ?? {}),
+    },
+  };
+}
+
+function applyWidgetStyleDefaults(hostElement) {
+  Object.entries(WIDGET_STYLE_DEFAULTS).forEach(([name, value]) => {
+    hostElement.style.setProperty(name, value);
+  });
+}
+
 export function mountDiscoveryGrid(hostElement, options = {}) {
   if (!(hostElement instanceof HTMLElement)) {
     throw new Error("mountDiscoveryGrid requires a host HTMLElement.");
   }
 
-  const settings = {
-    ...DEFAULT_OPTIONS,
-    ...options,
-    stickyNoteAttributes: {
-      ...DEFAULT_OPTIONS.stickyNoteAttributes,
-      ...(options.stickyNoteAttributes ?? {}),
-    },
-  };
-
+  let settings = mergeWidgetOptions(DEFAULT_OPTIONS, options);
   let chart = null;
   let resizeObserver = null;
   let widgetElements = null;
@@ -41,6 +51,7 @@ export function mountDiscoveryGrid(hostElement, options = {}) {
 
   hostElement.replaceChildren();
   hostElement.classList.add("discovery-grid-widget-host");
+  applyWidgetStyleDefaults(hostElement);
 
   widgetElements = createWidgetElements(hostElement, settings);
   chart = renderFromData(currentData);
@@ -55,8 +66,32 @@ export function mountDiscoveryGrid(hostElement, options = {}) {
   return {
     updateData(nextData) {
       currentData = Array.isArray(nextData) ? nextData : [];
-      chart?.destroy();
-      chart = renderFromData(currentData);
+      rerenderChart();
+    },
+    updateOptions(nextOptions = {}) {
+      if ("data" in nextOptions) {
+        currentData = Array.isArray(nextOptions.data) ? nextOptions.data : [];
+      }
+
+      const previousSettings = settings;
+      settings = mergeWidgetOptions(settings, nextOptions);
+
+      const stickyNoteConfigChanged =
+        previousSettings.stickyNote !== settings.stickyNote ||
+        "stickyNoteAttributes" in nextOptions;
+
+      if (stickyNoteConfigChanged) {
+        rebuildWidgetElements();
+        return;
+      }
+
+      if ("title" in nextOptions && chart) {
+        chart.setTitle({ text: settings.title });
+      }
+
+      if (!("title" in nextOptions) || "data" in nextOptions) {
+        rerenderChart();
+      }
     },
     resize() {
       chart?.reflow();
@@ -76,6 +111,18 @@ export function mountDiscoveryGrid(hostElement, options = {}) {
       return hostElement;
     },
   };
+
+  function rerenderChart() {
+    chart?.destroy();
+    chart = renderFromData(currentData);
+  }
+
+  function rebuildWidgetElements() {
+    chart?.destroy();
+    hostElement.replaceChildren();
+    widgetElements = createWidgetElements(hostElement, settings);
+    chart = renderFromData(currentData);
+  }
 
   function renderFromData(data) {
     const basePoints = buildBasePoints(data);
